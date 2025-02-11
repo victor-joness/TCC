@@ -21,6 +21,8 @@ type Word = {
   description: string;
   video: string;
   status: string;
+  interpreterId?: number;
+  interpreterName?: string;
 };
 
 const InterpreteScreen = () => {
@@ -28,10 +30,33 @@ const InterpreteScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("palavras");
 
+  // Exemplo de palavras com intérpretes já associados
   const initialWords: Word[] = [
-    { id: 1, word: "Palavra 1", description: "Descrição 1", video: "", status: "pending" },
-    { id: 2, word: "Palavra 2", description: "Descrição 2", video: "", status: "pending" },
-    { id: 3, word: "Palavra 3", description: "Descrição 3", video: "", status: "pending" },
+    { 
+      id: 1, 
+      word: "Palavra 1", 
+      description: "Descrição 1", 
+      video: "", 
+      status: "pending",
+      interpreterId: 1,
+      interpreterName: "João Silva"
+    },
+    { 
+      id: 2, 
+      word: "Palavra 2", 
+      description: "Descrição 2", 
+      video: "", 
+      status: "pending" 
+    },
+    { 
+      id: 3, 
+      word: "Palavra 3", 
+      description: "Descrição 3", 
+      video: "", 
+      status: "pending",
+      interpreterId: 2,
+      interpreterName: "Maria Santos"
+    },
   ];
 
   const laws = [
@@ -87,7 +112,14 @@ const InterpreteScreen = () => {
             navigation.navigate("interpretes/interpreteDetalhePalavra", { word: item })
           }
         >
-          <Text style={styles.wordText}>{item.word}</Text>
+          <View style={styles.wordContent}>
+            <Text style={styles.wordText}>{item.word}</Text>
+            {item.interpreterName && (
+              <Text style={styles.interpreterText}>
+                Intérprete: {item.interpreterName}
+              </Text>
+            )}
+          </View>
           <View style={styles.actionButtons}>
             <TouchableOpacity style={styles.iconButton}>
               <Icon name="check-circle" size={24} color="#8CAF50" />
@@ -126,19 +158,19 @@ const InterpreteScreen = () => {
       </View>
 
       <View style={styles.searchContainer}>
-          <Ionicons
-            name="search"
-            size={20}
-            color="#666"
-            style={styles.searchIcon}
-          />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Pesquisar"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
+        <Ionicons
+          name="search"
+          size={20}
+          color="#666"
+          style={styles.searchIcon}
+        />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Pesquisar"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
 
       <FlatList
         data={getFilteredItems()}
@@ -186,10 +218,18 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
   },
+  wordContent: {
+    flex: 1,
+  },
   wordText: {
     fontSize: 16,
     color: "#000",
     fontWeight: "bold",
+  },
+  interpreterText: {
+    fontSize: 14,
+    color: "#333",
+    marginTop: 4,
   },
   actionButtons: {
     flexDirection: "row",

@@ -14,30 +14,38 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { z } from "zod";
 import { useNavigation } from "@react-navigation/native";
 
-const schema = z
-  .object({
-    name: z.string().min(3, "Seu apelido deve ter pelo menos 3 caracteres"),
-    email: z.string().email("Digite um e-mail válido."),
-    password: z.string().min(6, "A senha deve ter no mínimo 6 caracteres."),
-    confirmPassword: z
-      .string()
-      .min(6, "A senha deve ter no mínimo 6 caracteres."),
-    role: z.string(),
-  });
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const phoneRegex = /^\d{11,}$/;
+
+const schema = z.object({
+  name: z.string().min(3, "Seu apelido deve ter pelo menos 3 caracteres"),
+  emailOrPhone: z
+    .string()
+    .min(1, "Informe um telefone ou e-mail.")
+    .refine(
+      (value) => emailRegex.test(value) || phoneRegex.test(value),
+      "Insira um e-mail ou telefone válido. O telefone deve conter 11 números."
+    ),
+  password: z.string().min(6, "A senha deve ter no mínimo 6 caracteres."),
+  confirmPassword: z
+    .string()
+    .min(6, "A senha deve ter no mínimo 6 caracteres."),
+  role: z.string(),
+});
 
 export default function RegisterScreen() {
   const navigation = useNavigation();
 
   const [form, setForm] = React.useState({
     name: "",
-    email: "",
+    emailOrPhone: "",
     password: "",
     confirmPassword: "",
     role: "",
   });
   const [errors, setErrors] = React.useState({
     name: "",
-    email: "",
+    emailOrPhone: "",
     password: "",
     confirmPassword: "",
     role: "",
@@ -58,13 +66,13 @@ export default function RegisterScreen() {
 
       setErrors({
         name: "",
-        email: "",
+        emailOrPhone: "",
         password: "",
         confirmPassword: "",
         role: "",
       });
 
-      if(form.password !== form.confirmPassword) {
+      if (form.password !== form.confirmPassword) {
         setErrors((prevErrors) => ({
           ...prevErrors,
           confirmPassword: "As senhas devem ser iguais",
@@ -97,14 +105,14 @@ export default function RegisterScreen() {
           <P style={styles.title}>Crie sua conta</P>
 
           <P style={styles.signup}>
-                          Já possui conta?{" "}
-                          <Text
-                            style={styles.signupLink}
-                            onPress={() => navigation.navigate("auth/login" as never)}
-                          >
-                            Login.
-                          </Text>
-                        </P>
+            Já possui conta?{" "}
+            <Text
+              style={styles.signupLink}
+              onPress={() => navigation.navigate("auth/login" as never)}
+            >
+              Login.
+            </Text>
+          </P>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Nome</Text>
@@ -127,7 +135,7 @@ export default function RegisterScreen() {
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>E-mail</Text>
+            <Text style={styles.label}>E-mail ou Telefone</Text>
             <View style={styles.inputWrapper}>
               <Icon
                 name="email-outline"
@@ -137,14 +145,14 @@ export default function RegisterScreen() {
               />
               <TextInput
                 style={styles.input}
-                placeholder="Digite seu e-mail"
+                placeholder="Digite seu e-mail ou um telefone"
                 placeholderTextColor="#999"
-                value={form.email}
-                onChangeText={(value) => handleChange("email", value)}
+                value={form.emailOrPhone}
+                onChangeText={(value) => handleChange("emailOrPhone", value)}
               />
             </View>
-            {errors.email && (
-              <Text style={styles.errorText}>{errors.email}</Text>
+            {errors.emailOrPhone && (
+              <Text style={styles.errorText}>{errors.emailOrPhone}</Text>
             )}
           </View>
 
@@ -189,7 +197,7 @@ export default function RegisterScreen() {
             )}
           </View>
 
-          <View style={styles.roleContainer}>
+          {/* <View style={styles.roleContainer}>
             <Text style={styles.label}>Escolha uma das opções:</Text>
             <View style={styles.roles}>
               <TouchableOpacity
@@ -228,8 +236,10 @@ export default function RegisterScreen() {
                 <Text style={styles.roleText}>Sou Intérprete</Text>
               </TouchableOpacity>
             </View>
-            {errors.role && <Text style={styles.errorTextRole} >{errors.role}</Text>}
-          </View>
+            {errors.role && (
+              <Text style={styles.errorTextRole}>{errors.role}</Text>
+            )}
+          </View> */}
 
           <View style={styles.checkboxContainer}>
             <Checkbox
@@ -276,7 +286,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 5,
-    elevation: 5, 
+    elevation: 5,
   },
   title: {
     textAlign: "center",

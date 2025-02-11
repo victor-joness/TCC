@@ -7,7 +7,7 @@ import {
   FlatList,
   TextInput,
   Alert,
-  Linking
+  Linking,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { Picker } from "@react-native-picker/picker";
@@ -22,6 +22,8 @@ export type Word = {
   status: string;
   modulo: string;
   categoria: string;
+  interprete: string;
+  variacoes: string[];
 };
 
 const AdminScreen = () => {
@@ -36,21 +38,25 @@ const AdminScreen = () => {
   const initialWords: Word[] = [
     {
       id: 1,
-      word: 'Olá',
-      description: 'Saudação informal em Libras',
-      video: 'https://youtube.com/watch?v=example1',
-      status: 'pending',
-      modulo: 'Basico',
-      categoria: 'Saudações',
+      word: "Olá",
+      description: "Saudação informal em Libras",
+      video: "https://youtube.com/watch?v=example1",
+      status: "pending",
+      modulo: "Basico",
+      categoria: "Saudações",
+      interprete: "João Silva",
+      variacoes: ["Oi", "Oi, tudo bem?", "Oi, como vai?"],
     },
     {
       id: 2,
-      word: 'Bom dia',
-      description: 'Saudação matinal em Libras',
-      video: 'https://youtube.com/watch?v=example2',
-      status: 'pending',
-      modulo: 'Basico',
-      categoria: 'Saudações',
+      word: "Bom dia",
+      description: "Saudação matinal em Libras",
+      video: "https://youtube.com/watch?v=example2",
+      status: "pending",
+      modulo: "Basico",
+      categoria: "Saudações",
+      interprete: "Maria Oliveira",
+      variacoes: ["Bom dia", "Boa tarde", "Boa noite"],
     },
   ];
 
@@ -209,22 +215,22 @@ const AdminScreen = () => {
 
   const handleWordInfo = (word: Word) => {
     //@ts-ignore
-    navigation.navigate('admin/adminDetalhePalavra', { word });
+    navigation.navigate("admin/adminDetalhePalavra", { word });
   };
 
   const handleWordStatus = (id: number, newStatus: string) => {
     Alert.alert(
-      'Confirmar alteração',
+      "Confirmar alteração",
       `Deseja alterar o status para ${newStatus}?`,
       [
         {
-          text: 'Cancelar',
-          style: 'cancel',
+          text: "Cancelar",
+          style: "cancel",
         },
         {
-          text: 'Confirmar',
+          text: "Confirmar",
           onPress: () => {
-            Alert.alert('Sucesso', 'Status atualizado com sucesso!');
+            Alert.alert("Sucesso", "Status atualizado com sucesso!");
           },
         },
       ]
@@ -237,13 +243,13 @@ const AdminScreen = () => {
       <View style={styles.actionButtons}>
         <TouchableOpacity
           style={styles.iconButton}
-          onPress={() => handleWordStatus(item.id, 'Aprovado')}
+          onPress={() => handleWordStatus(item.id, "Aprovado")}
         >
           <Icon name="check-circle" size={24} color="#8CAF50" />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.iconButton}
-          onPress={() => handleWordStatus(item.id, 'Rejeitado')}
+          onPress={() => handleWordStatus(item.id, "Rejeitado")}
         >
           <Icon name="cancel" size={24} color="#F44336" />
         </TouchableOpacity>
@@ -359,6 +365,125 @@ const AdminScreen = () => {
     </View>
   );
 
+  const [interpreters, setInterpreters] = useState([
+    { id: 1, name: "João Silva", contact: "joao@email.com" },
+    { id: 2, name: "Maria Oliveira", contact: "maria@email.com" },
+  ]);
+
+  const [newInterpreterName, setNewInterpreterName] = useState("");
+  const [newInterpreterContact, setNewInterpreterContact] = useState("");
+  const [editingInterpreterId, setEditingInterpreterId] = useState<
+    number | null
+  >(null);
+
+  const addInterpreter = () => {
+    if (newInterpreterName.trim() && newInterpreterContact.trim()) {
+      if (editingInterpreterId !== null) {
+        setInterpreters(
+          interpreters.map((item) =>
+            item.id === editingInterpreterId
+              ? {
+                  ...item,
+                  name: newInterpreterName,
+                  contact: newInterpreterContact,
+                }
+              : item
+          )
+        );
+        setEditingInterpreterId(null);
+      } else {
+        const newId = Math.max(...interpreters.map((item) => item.id), 0) + 1;
+        setInterpreters([
+          ...interpreters,
+          {
+            id: newId,
+            name: newInterpreterName,
+            contact: newInterpreterContact,
+          },
+        ]);
+      }
+      setNewInterpreterName("");
+      setNewInterpreterContact("");
+    } else {
+      Alert.alert("Erro", "Preencha o nome e o contato do intérprete.");
+    }
+  };
+
+  const handleEditInterpreter = (id: number, name: string, contact: string) => {
+    setEditingInterpreterId(id);
+    setNewInterpreterName(name);
+    setNewInterpreterContact(contact);
+  };
+
+  const handleDeleteInterpreter = (id: number) => {
+    Alert.alert("Confirmar exclusão", "Deseja excluir este intérprete?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Excluir",
+        onPress: () =>
+          setInterpreters(interpreters.filter((item) => item.id !== id)),
+        style: "destructive",
+      },
+    ]);
+  };
+
+  const renderInterpreterItem = ({
+    item,
+  }: {
+    item: { id: number; name: string; contact: string };
+  }) => (
+    <View style={styles.card}>
+      <Text style={styles.cardText}>{item.name}</Text>
+      <Text style={styles.cardLink}>{item.contact}</Text>
+      <View style={styles.cardActions}>
+        <TouchableOpacity
+          onPress={() =>
+            handleEditInterpreter(item.id, item.name, item.contact)
+          }
+          style={styles.actionButton}
+        >
+          <Icon name="edit" size={24} color="#2196F3" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => handleDeleteInterpreter(item.id)}
+          style={styles.actionButton}
+        >
+          <Icon name="delete" size={24} color="#F44336" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderInterpreteList = () => (
+    <View style={styles.sectionContainer}>
+      <View style={styles.addContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Nome"
+          value={newInterpreterName}
+          onChangeText={setNewInterpreterName}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          value={newInterpreterContact}
+          onChangeText={setNewInterpreterContact}
+        />
+        <TouchableOpacity style={styles.addButton} onPress={addInterpreter}>
+          <Text style={styles.addButtonText}>
+            {editingInterpreterId !== null ? "Editar" : "Adicionar"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+      <FlatList
+        data={interpreters}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderInterpreterItem}
+        style={styles.list}
+      />
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -392,6 +517,7 @@ const AdminScreen = () => {
             <Picker.Item label="Palavras" value="palavras" />
             <Picker.Item label="Notícias" value="noticias" />
             <Picker.Item label="Leis" value="leis" />
+            <Picker.Item label="Intérprete" value="interprete" />
           </Picker>
         </View>
       </View>
@@ -406,6 +532,19 @@ const AdminScreen = () => {
       )}
       {selectedSection === "noticias" && renderNewsList()}
       {selectedSection === "leis" && renderLawsList()}
+
+      {selectedSection === "interprete" && (
+        <View style={styles.wordRequestContainer}>
+          <Text style={styles.cardInformation}>
+            Aqui você pode adicionar, editar e remover intérpretes do sistema.
+            Para acessar, utilize o e-mail geral dos intérpretes. Certifique-se
+            de manter as informações sempre atualizadas para um melhor
+            gerenciamento
+          </Text>
+        </View>
+      )}
+
+      {selectedSection === "interprete" && renderInterpreteList()}
     </View>
   );
 };
@@ -550,7 +689,20 @@ const styles = StyleSheet.create({
   cardLink: {
     fontSize: 12,
     marginTop: 4,
-  }
+  },
+  wordRequestContainer: {
+    flexDirection: "column",
+    padding: 16,
+    gap: 8,
+  },
+  cardInformation: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#000",
+    borderWidth: 1,
+    padding: 16,
+    borderRadius: 8,
+  },
 });
 
 export default AdminScreen;

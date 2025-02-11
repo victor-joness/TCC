@@ -18,11 +18,16 @@ const mockModules = [
     id: 1,
     words: [
       {
-        id: 11,
+        id: 1,
         word: "Palavra 1.1",
         description:
           "Lorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsum Lorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsum",
-        video: "w16n9y3HvrI",
+        video:
+          "vJW2u13VXQk",
+        status: "Aprovado",
+        modulo: "Básico",
+        categoria: "Saudações",
+        variacao: true,
       },
       {
         id: 12,

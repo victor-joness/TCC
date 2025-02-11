@@ -13,14 +13,23 @@ import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { z } from "zod";
 
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const phoneRegex = /^\d{11,}$/;
+
 const schema = z.object({
-  email: z.string().email("Digite um e-mail válido."),
+  emailOrPhone: z
+      .string()
+      .min(1, "Informe um telefone ou e-mail.")
+      .refine(
+        (value) => emailRegex.test(value) || phoneRegex.test(value),
+        "Insira um e-mail ou telefone válido. O telefone deve conter 11 números."
+      ),
   password: z.string().min(5, "A senha deve ter no mínimo 5 caracteres."),
 });
 
 export default function Screen() {
-  const [form, setForm] = React.useState({ email: "", password: "" });
-  const [errors, setErrors] = React.useState({ email: "", password: "" });
+  const [form, setForm] = React.useState({ emailOrPhone: "", password: "" });
+  const [errors, setErrors] = React.useState({ emailOrPhone: "", password: "" });
   const navigation = useNavigation();
 
   const handleChange = (field: string, value: string) => {
@@ -33,18 +42,18 @@ export default function Screen() {
   const handleLogin = () => {
     try {
       schema.parse(form);
-      setErrors({ email: "", password: "" });
+      setErrors({ emailOrPhone: "", password: "" });
       console.log("Login com sucesso:", form);
 
-      if(form.email === "admin@gmail.com" && form.password === "admin") {
+      if(form.emailOrPhone === "admin@gmail.com" && form.password === "admin") {
         navigation.navigate("admin/modulos" as never)
       }
 
-      if(form.email === "surdo@gmail.com" && form.password === "surdo") {
+      if(form.emailOrPhone === "surdo@gmail.com" && form.password === "surdo") {
         navigation.navigate("surdos/modulos" as never)
       }
 
-      if(form.email === "interprete@gmail.com" && form.password === "interprete") {
+      if(form.emailOrPhone === "interprete@gmail.com" && form.password === "interprete") {
         navigation.navigate("interpretes/modulos" as never)
       }
     } catch (e: any) {
@@ -81,7 +90,7 @@ export default function Screen() {
                 Logue com sua conta
               </P>
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>E-mail</Text>
+                <Text style={styles.label}>E-mail ou Telefone</Text>
                 <View style={styles.inputWrapper}>
                   <Icon
                     name="email-outline"
@@ -91,14 +100,14 @@ export default function Screen() {
                   />
                   <TextInput
                     style={styles.input}
-                    placeholder="Digite seu e-mail"
+                    placeholder="Digite seu e-mail ou telefone"
                     placeholderTextColor="#999"
-                    value={form.email}
-                    onChangeText={(value) => handleChange("email", value)}
+                    value={form.emailOrPhone}
+                    onChangeText={(value) => handleChange("emailOrPhone", value)}
                   />
                 </View>
-                {errors.email && (
-                  <Text style={styles.errorText}>{errors.email}</Text>
+                {errors.emailOrPhone && (
+                  <Text style={styles.errorText}>{errors.emailOrPhone}</Text>
                 )}
               </View>
 
@@ -183,6 +192,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     marginBottom: 15,
+    marginTop: 10,
   },
   label: {
     fontSize: 14,

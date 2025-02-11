@@ -91,6 +91,11 @@ const ProfileScreen = () => {
     navigation.navigate('surdos/editPerfil', { userInfo })
   };
 
+  const handleClickSobre = () => {
+    //@ts-ignore
+    navigation.navigate('surdos/sobre')
+  };
+
   const MenuOption = ({ icon, title, onPress, rightElement } : any) => (
     <TouchableOpacity 
       style={styles.menuOption}
@@ -122,10 +127,11 @@ const ProfileScreen = () => {
       </View>
 
       <View style={styles.menuContainer}>
-        <MenuOption title="Estatísticas" onPress={() => {}} />
+        {/* <MenuOption title="Estatísticas" onPress={() => {}} /> */}
         <MenuOption title="Editar perfil" onPress={handleEditPerfil} />
-        <MenuOption title="Compartilhar" onPress={() => {}} />
-        <MenuOption 
+        <MenuOption title="Sobre o aplicativo" onPress={handleClickSobre} />
+        {/* <MenuOption title="Compartilhar" onPress={() => {}} /> */}
+        {/* <MenuOption 
           title="Modo escuro" 
           rightElement={
             <Switch
@@ -135,8 +141,8 @@ const ProfileScreen = () => {
               value={isEnabled}
             />
           }
-        />
-        <MenuOption title="Gerar certificado" onPress={() => {}} />
+        /> */}
+       {/*  <MenuOption title="Gerar certificado" onPress={() => {}} /> */}
         <MenuOption title="Sair da conta" onPress={handleLogout} />
       </View>
     </ScrollView>

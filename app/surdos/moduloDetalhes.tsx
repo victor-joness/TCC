@@ -20,7 +20,11 @@ const mockModules = [
         description:
           "Lorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsum Lorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsum",
         video:
-          "w16n9y3HvrI",
+          "vJW2u13VXQk",
+        status: "Aprovado",
+        modulo: "Básico",
+        categoria: "Saudações",
+        variacao: true,
       },
       {
         id: 2,

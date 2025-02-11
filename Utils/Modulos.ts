@@ -1,5 +1,5 @@
-export const modulosData = {
-  Basico: [
+const modulosData = {
+  "UsoDiario": [
     { id: 1, name: "Saudações", icon: "👋" },
     { id: 2, name: "Sentimentos", icon: "❤️" },
     { id: 3, name: "Animais", icon: "🐶" },
@@ -8,35 +8,37 @@ export const modulosData = {
     { id: 6, name: "Família", icon: "👨‍👩‍👧" },
     { id: 7, name: "Escola", icon: "🏫" },
     { id: 8, name: "Profissões", icon: "💼" },
+    { id: 9, name: "Transporte", icon: "🚗" },
+    { id: 10, name: "Clima", icon: "🌤️" },
+    { id: 11, name: "Viagens", icon: "✈️" },
+    { id: 12, name: "Lazer", icon: "🎮" }
   ],
-  Medio: [
+  "UsoTecnico": [
     { id: 1, name: "Esportes", icon: "⚽" },
-    { id: 2, name: "Transporte", icon: "🚗" },
-    { id: 3, name: "Tecnologia", icon: "💻" },
+    { id: 2, name: "Digital", icon: "📱" },   
+    { id: 3, name: "Moda", icon: "👗" },                 
     { id: 4, name: "Ciência", icon: "🔬" },
     { id: 5, name: "Música", icon: "🎵" },
     { id: 6, name: "Arte", icon: "🖼️" },
-    { id: 7, name: "Clima", icon: "🌤️" },
+    { id: 7, name: "Biologia", icon: "🐄" },
     { id: 8, name: "Geografia", icon: "🌍" },
-  ],
-  Avancado: [
-    { id: 1, name: "Política", icon: "🏛️" },
-    { id: 2, name: "História", icon: "📜" },
-    { id: 3, name: "Saúde", icon: "🩺" },
-    { id: 4, name: "Economia", icon: "💰" },
-    { id: 5, name: "Psicologia", icon: "🧠" },
-    { id: 6, name: "Religião", icon: "⛪" },
-    { id: 7, name: "Literatura", icon: "📚" },
-    { id: 8, name: "Filosofia", icon: "🤔" },
-  ],
-  Tecnico: [
-    { id: 1, name: "Programação", icon: "💻" },
-    { id: 2, name: "Engenharia", icon: "🔧" },
-    { id: 3, name: "Arquitetura", icon: "🏗️" },
-    { id: 4, name: "Robótica", icon: "🤖" },
-    { id: 5, name: "Matemática", icon: "➕" },
-    { id: 6, name: "Química", icon: "⚗️" },
-    { id: 7, name: "Física", icon: "📐" },
-    { id: 8, name: "Astronomia", icon: "🌌" },
+    { id: 9, name: "Política", icon: "🏛️" },
+    { id: 10, name: "História", icon: "📜" },
+    { id: 11, name: "Saúde", icon: "🩺" },
+    { id: 12, name: "Economia", icon: "💰" },
+    { id: 13, name: "Psicologia", icon: "🧠" },
+    { id: 14, name: "Religião", icon: "⛪" },
+    { id: 15, name: "Literatura", icon: "📚" },
+    { id: 16, name: "Filosofia", icon: "🤔" },
+    { id: 17, name: "Programação", icon: "💻" },
+    { id: 18, name: "Engenharia", icon: "🔧" },
+    { id: 19, name: "Arquitetura", icon: "🏗️" },
+    { id: 20, name: "Robótica", icon: "🤖" },
+    { id: 21, name: "Matemática", icon: "➕" },
+    { id: 22, name: "Química", icon: "⚗️" },
+    { id: 23, name: "Física", icon: "📐" },
+    { id: 24, name: "Astronomia", icon: "🌌" },
   ],
 };
+
+export default modulosData;

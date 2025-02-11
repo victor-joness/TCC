@@ -132,6 +132,11 @@ export default function RootLayout() {
             name="surdos/moduloPalavraCurtidas"
             options={{ headerTitle: "Voltar" }}
           />
+          <Stack.Screen name="surdos/VariacoesLinguisticas" options={{ headerTitle: "Voltar" }}/>
+          <Stack.Screen
+            name="surdos/sobre"
+            options={{ headerTitle: "Voltar" }}
+          />
 
           <Stack.Screen name="interpretes/modulos" options={{ headerShown: false }}/>
           <Stack.Screen name="interpretes/dicionario" options={{ headerShown: false }}/>
@@ -145,7 +150,7 @@ export default function RootLayout() {
           <Stack.Screen name="admin/admin" />
           <Stack.Screen name="admin/perfil" options={{ headerTitle: "Voltar" }}/>
 
-          <Stack.Screen name="admin/moduloDetalhes" />
+          <Stack.Screen name="admin/moduloDetalhes" options={{ headerTitle: "Voltar" }}/>
           <Stack.Screen name="admin/editPerfil" />
           <Stack.Screen name="admin/moduloPalavraDetalhes" options={{ headerTitle: "Voltar" }}/>
           <Stack.Screen name="admin/moduloPalavraRecentes" options={{ headerTitle: "Voltar" }}/>

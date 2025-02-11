@@ -11,6 +11,8 @@ type Word = {
   status: string;
   modulo: string;
   categoria: string;
+  interprete: string;
+  variacoes: string[];
 };
 
 type RouteParams = {
@@ -63,6 +65,24 @@ const adminDetalhePalavra = () => {
             {word.status.charAt(0).toUpperCase() + word.status.slice(1)}
           </Text>
         </View>
+
+        <View style={styles.infoContainer}>
+          <Text style={styles.label}>Intérprete Responsável</Text>
+          <Text style={styles.info}>{word.interprete || "Não informado"}</Text>
+        </View>
+
+        <View style={styles.variationsContainer}>
+        <Text style={styles.sectionTitle}>Variações Linguísticas</Text>
+        {word.variacoes.length > 0 ? (
+          word.variacoes.map((variacoes, index) => (
+            <Text key={index} style={styles.variationText}>
+              {variacoes}
+            </Text>
+          ))
+        ) : (
+          <Text style={styles.noVariationText}>Nenhuma variação disponível</Text>
+        )}
+      </View>
       </View>
 
       <View style={styles.videoContainer}>
@@ -125,7 +145,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     marginBottom: 4,
-    fontWeight: "500"
+    fontWeight: "500",
   },
   info: {
     fontSize: 16,
@@ -186,6 +206,22 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f9fa",
     borderRadius: 8,
   },
+  variationsContainer: {
+    backgroundColor: "#f8f9fa",
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 24,
+  },
+  variationText: {
+    fontSize: 16,
+    color: "#333",
+    marginBottom: 4,
+  },
+  noVariationText: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+  }
 });
 
 export default adminDetalhePalavra;

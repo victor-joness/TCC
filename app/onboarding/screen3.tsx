@@ -7,6 +7,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Linking,
+  Image
 } from "react-native";
 import { H1, H2, P } from "~/components/ui/typography";
 import { useNavigation } from "@react-navigation/native";
@@ -20,11 +22,19 @@ export default function OnboardingScreen({ screenNumber = 3 }: any) {
   const HandleCicle = async () => {
     try {
       await AsyncStorage.setItem("hasSeenOnboarding", "true");
-      
+
       navigation.navigate(`auth/login` as never);
     } catch (error) {
       console.error("Erro ao salvar status do onboarding:", error);
     }
+  };
+
+  const handleEmailPress = () => {
+    Linking.openURL("mailto:contato@app.com");
+  };
+
+  const handleInstagramPress = () => {
+    Linking.openURL("https://www.instagram.com/seu_perfil");
   };
 
   return (
@@ -38,14 +48,21 @@ export default function OnboardingScreen({ screenNumber = 3 }: any) {
             <H2 style={{ textAlign: "center", color: "#000" }}>
               Este aplicativo foi desenvolvido como parte do Trabalho de
               Conclusão de Curso (TCC) por dois alunos. O objetivo principal é
-              promover a inclusão e facilitar a comunicação entre pessoas
-              surdas.
+              promover a inclusão e facilitar a comunicação entre pessoas surdas
+              e a comunidade.
             </H2>
             <View style={styles.redesocial}>
-              <P>Victor Jones Mesquita de Sousa</P>
-            </View>
-            <View style={styles.redesocial}>
-              <P>Victor Jones Mesquita de Sousa</P>
+              <P style={{ color: "#fff", fontWeight: "bold" }}>Contato:</P>
+              <TouchableOpacity onPress={handleEmailPress} style={styles.botao}>
+                <Text style={styles.textoBotao}>📧 E-mail</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleInstagramPress}
+                style={styles.botao}
+              >
+                <Text style={styles.textoBotao}>📸 Instagram</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -53,10 +70,16 @@ export default function OnboardingScreen({ screenNumber = 3 }: any) {
             <Text style={styles.infoText}>Apoio</Text>
             <View style={styles.grid}>
               <View style={styles.gridItem}>
-                <P>A</P>
+                <Image
+                  source={ require("~/assets/images/APOIO1.png") }
+                  style={styles.image}
+                />
               </View>
               <View style={styles.gridItem}>
-                <P>B</P>
+                <Image
+                  source={ require("~/assets/images/APOIO2.png") }
+                  style={{ ...styles.image, resizeMode: "cover" }}
+                />
               </View>
               <View style={styles.gridItem}>
                 <P>C</P>
@@ -96,9 +119,9 @@ export default function OnboardingScreen({ screenNumber = 3 }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 10, backgroundColor: "#fff" },
   infosContainer: {
-    flex: 1, // Ocupa metade da tela
+    flex: 1,
     paddingHorizontal: 20,
-    justifyContent: "space-evenly", // Espaçamento equilibrado
+    justifyContent: "space-evenly",
     gap: 10,
     marginTop: 50,
   },
@@ -107,12 +130,14 @@ const styles = StyleSheet.create({
     height: 40,
     backgroundColor: "#0B8DCD",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-evenly",
     color: "#fff",
-    borderRadius: 5, // Melhor estética
+    borderRadius: 5,
+    display: "flex",
+    flexDirection: "row",
   },
   infos: {
-    flex: 1, // Parte inferior (apoio e botões)
+    flex: 1,
     width: "100%",
     backgroundColor: "#fff",
     alignItems: "center",
@@ -128,7 +153,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   gridItem: {
-    width: "45%", // Dois itens por linha
+    width: "45%",
     height: 50,
     backgroundColor: "#0B8DCD",
     alignItems: "center",
@@ -136,7 +161,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   nextButton: {
-    width: "90%", // Largura ajustada para ficar proporcional
+    width: "90%",
     height: 60,
     backgroundColor: "#24468E",
     alignItems: "center",
@@ -148,8 +173,22 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   infoText: {
-    fontSize: 70,
+    fontSize: 50,
     fontWeight: "bold",
     marginBottom: 20,
   },
+  botao: {
+    backgroundColor: "#0B8DCD",
+    padding: 10,
+    borderRadius: 5,
+  },
+  textoBotao: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  image: {
+    width: "97%",
+    height: 50,
+    resizeMode: "contain",
+  }
 });

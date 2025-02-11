@@ -11,7 +11,19 @@ import {
 import YoutubePlayer from "react-native-youtube-iframe";
 import { useRoute } from "@react-navigation/native";
 import { Picker } from "@react-native-picker/picker";
-import { modulosData } from "../../Utils/Modulos";
+import modulosData from "../../Utils/Modulos";
+import { Checkbox } from "~/components/ui/checkbox";
+
+type Interpreter = {
+  id: number;
+  name: string;
+};
+
+const interpreters: Interpreter[] = [
+  { id: 1, name: "João Silva" },
+  { id: 2, name: "Maria Santos" },
+  { id: 3, name: "Pedro Oliveira" },
+];
 
 type ModuloItem = {
   id: number;
@@ -20,10 +32,8 @@ type ModuloItem = {
 };
 
 type ModulosData = {
-  Basico: ModuloItem[];
-  Medio: ModuloItem[];
-  Avancado: ModuloItem[];
-  Tecnico: ModuloItem[];
+  UsoDiario: ModuloItem[];
+  UsoTecnico: ModuloItem[];
 };
 
 type Word = {
@@ -34,6 +44,8 @@ type Word = {
   status: string;
   modulo: string;
   categoria: string;
+  variacao: boolean;
+  interpreterId?: number;
 };
 
 const InterpreterWordDetailScreen = () => {
@@ -41,23 +53,36 @@ const InterpreterWordDetailScreen = () => {
   const { word } = route.params as { word: Word };
 
   const [youtubeUrl, setYoutubeUrl] = useState("");
-  const [wordDescription, setWordDescription] = useState(word.description || "");
+  const [wordDescription, setWordDescription] = useState(
+    word.description || ""
+  );
   const [selectedModulo, setSelectedModulo] = useState(word.modulo);
-  const [selectedCategoria, setSelectedCategoria] = useState(word.categoria || "");
+  const [selectedCategoria, setSelectedCategoria] = useState(
+    word.categoria || ""
+  );
+  const [selectedInterpreter, setSelectedInterpreter] = useState<number | undefined>(
+    word.interpreterId
+  );
   const [playing, setPlaying] = useState(false);
+  const [variacao, setVariacao] = useState(false);
+  const [variations, setVariations] = useState([
+    { name: "", description: "", video: "" },
+  ]);
 
   const modulos = Object.keys(modulosData as ModulosData);
 
   const categorias = useMemo(() => {
-    const moduloSelecionado = modulosData[selectedModulo as keyof typeof modulosData] || [];
-    return moduloSelecionado.map(item => ({
+    const moduloSelecionado =
+      modulosData[selectedModulo as keyof typeof modulosData] || [];
+    return moduloSelecionado.map((item) => ({
       value: item.name,
-      label: `${item.icon} ${item.name}`
+      label: `${item.icon} ${item.name}`,
     }));
   }, [selectedModulo]);
 
   const extractVideoId = (url: string) => {
-    const regex = /(?:\?v=|\/embed\/|\/v\/|youtu\.be\/|\/watch\?v=|\/)([a-zA-Z0-9_-]{11})/;
+    const regex =
+      /(?:\?v=|\/embed\/|\/v\/|youtu\.be\/|\/watch\?v=|\/)([a-zA-Z0-9_-]{11})/;
     const match = url.match(regex);
     return match ? match[1] : null;
   };
@@ -71,17 +96,82 @@ const InterpreterWordDetailScreen = () => {
       video: youtubeUrl || currentWord.video,
       modulo: selectedModulo || currentWord.modulo,
       categoria: selectedCategoria,
+      variacao: variacao,
+      interpreterId: selectedInterpreter,
     };
+
+    if (variacao) {
+      variations.forEach((variation) => {
+        const variationWord = {
+          originalWord: currentWord.word,
+          variation: variation.description,
+          video: variation.video,
+          modulo: selectedModulo,
+          categoria: selectedCategoria,
+          interpreterId: selectedInterpreter,
+        };
+
+        saveVariationToAuxiliaryTable(variationWord);
+      });
+    }
 
     console.log("Objeto atualizado:", updatedWord);
     Alert.alert("Sucesso", "Alterações salvas com sucesso!");
   };
 
+  const saveVariationToAuxiliaryTable = (variationWord: any) => {
+    console.log("Variação salva:", variationWord);
+  };
+
+  const handleAddVariation = () => {
+    setVariations([...variations, { name: "", description: "", video: "" }]);
+  };
+
+  const handleRemoveVariation = (index: number) => {
+    const newVariations = variations.filter((_, i) => i !== index);
+    setVariations(newVariations);
+  };
+
+  const handleVariationChange = (
+    index: number,
+    field: keyof typeof variations[0],
+    value: string
+  ) => {
+    const updatedVariations = [...variations];
+    updatedVariations[index][field] = value;
+    setVariations(updatedVariations);
+  };
+
+  const selectedInterpreterName = interpreters.find(
+    (interpreter) => interpreter.id === selectedInterpreter
+  )?.name;
+
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.wordTitle}>{word.word}</Text>
+      {selectedInterpreterName && (
+        <Text style={styles.interpreterName}>
+          Intérprete: {selectedInterpreterName}
+        </Text>
+      )}
 
       <View style={styles.wordDetails}>
+        <Text style={styles.label}>Selecionar Intérprete:</Text>
+        <Picker
+          selectedValue={selectedInterpreter}
+          onValueChange={(itemValue) => setSelectedInterpreter(itemValue)}
+          style={styles.picker}
+        >
+          <Picker.Item label="Selecione um intérprete" value={undefined} />
+          {interpreters.map((interpreter) => (
+            <Picker.Item
+              key={interpreter.id}
+              label={interpreter.name}
+              value={interpreter.id}
+            />
+          ))}
+        </Picker>
+
         <TextInput
           style={styles.input}
           placeholder="Inserir Link do vídeo (YouTube)"
@@ -131,9 +221,9 @@ const InterpreterWordDetailScreen = () => {
         >
           <Picker.Item label="Selecione uma categoria" value="" />
           {categorias.map((categoria) => (
-            <Picker.Item 
-              key={categoria.value} 
-              label={categoria.label} 
+            <Picker.Item
+              key={categoria.value}
+              label={categoria.label}
               value={categoria.value}
             />
           ))}
@@ -156,6 +246,63 @@ const InterpreterWordDetailScreen = () => {
             <Text style={styles.previewText}>{wordDescription}</Text>
           </View>
         ) : null}
+
+        <View style={styles.checkboxContainer}>
+          <Checkbox
+            onCheckedChange={setVariacao}
+            checked={variacao}
+            style={styles.checkbox}
+          />
+          <Text style={styles.checkboxLabel}>
+            Esta palavra tem variações linguísticas
+          </Text>
+        </View>
+
+        {variacao && (
+          <View style={styles.variationsContainer}>
+            {variations.map((variation, index) => (
+              <View key={index} style={styles.variationContainer}>
+                <TextInput
+                  style={styles.input}
+                  placeholder={`Nome da variaçao ${index + 1}`}
+                  value={variation.name}
+                  onChangeText={(text) =>
+                    handleVariationChange(index, "name", text)
+                  }
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder={`Descrição da Variação ${index + 1}`}
+                  value={variation.description}
+                  onChangeText={(text) =>
+                    handleVariationChange(index, "description", text)
+                  }
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder={`Link do Vídeo da Variação ${index + 1}`}
+                  value={variation.video}
+                  onChangeText={(text) =>
+                    handleVariationChange(index, "video", text)
+                  }
+                />
+                <TouchableOpacity
+                  style={styles.removeButton}
+                  onPress={() => handleRemoveVariation(index)}
+                >
+                  <Text style={styles.removeButtonText}>Remover Variação</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={handleAddVariation}
+            >
+              <Text style={styles.addButtonText}>Adicionar Variação</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <TouchableOpacity
           style={styles.confirmButton}
@@ -183,6 +330,12 @@ const styles = StyleSheet.create({
     padding: 16,
     textAlign: "center",
   },
+  interpreterName: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 16,
+  },
   input: {
     borderWidth: 1,
     borderColor: "#ddd",
@@ -193,7 +346,7 @@ const styles = StyleSheet.create({
   },
   descriptionInput: {
     height: 100,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   videoPreview: {
     height: 200,
@@ -240,6 +393,51 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   confirmButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  checkboxContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+  },
+  checkboxLabel: {
+    fontSize: 16,
+    color: "#333",
+  },
+  checkbox: {
+    marginRight: 10,
+    color: "#000",
+    borderColor: "#000",
+  },
+  variationsContainer: {
+    marginTop: 20,
+  },
+  variationContainer: {
+    marginBottom: 16,
+  },
+  removeButton: {
+    backgroundColor: "#ff4d4d",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  removeButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  addButton: {
+    backgroundColor: "#00b4d8",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 16,
+  },
+  addButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",

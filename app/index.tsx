@@ -11,7 +11,7 @@ export default function Screen() {
     const checkOnboardingStatus = async () => {
       try {
         /* TODO lembrar de tirar isso */
-        //await AsyncStorage.clear();
+        await AsyncStorage.clear();
         const hasSeenOnboarding = await AsyncStorage.getItem("hasSeenOnboarding");
 
         if (hasSeenOnboarding === "true") {

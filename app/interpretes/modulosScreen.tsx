@@ -10,55 +10,13 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { Ionicons } from "@expo/vector-icons";
-
-const modulesData = {
-  Basico: [
-    { id: 1, name: "Saudações", icon: "👋" },
-    { id: 2, name: "Sentimentos", icon: "❤️" },
-    { id: 3, name: "Animais", icon: "🐶" },
-    { id: 4, name: "Comida", icon: "🍎" },
-    { id: 5, name: "Cores", icon: "🎨" },
-    { id: 6, name: "Família", icon: "👨‍👩‍👧" },
-    { id: 7, name: "Escola", icon: "🏫" },
-    { id: 8, name: "Profissões", icon: "💼" },
-  ],
-  Medio: [
-    { id: 1, name: "Esportes", icon: "⚽" },
-    { id: 2, name: "Transporte", icon: "🚗" },
-    { id: 3, name: "Tecnologia", icon: "💻" },
-    { id: 4, name: "Ciência", icon: "🔬" },
-    { id: 5, name: "Música", icon: "🎵" },
-    { id: 6, name: "Arte", icon: "🖼️" },
-    { id: 7, name: "Clima", icon: "🌤️" },
-    { id: 8, name: "Geografia", icon: "🌍" },
-  ],
-  Avancado: [
-    { id: 1, name: "Política", icon: "🏛️" },
-    { id: 2, name: "História", icon: "📜" },
-    { id: 3, name: "Saúde", icon: "🩺" },
-    { id: 4, name: "Economia", icon: "💰" },
-    { id: 5, name: "Psicologia", icon: "🧠" },
-    { id: 6, name: "Religião", icon: "⛪" },
-    { id: 7, name: "Literatura", icon: "📚" },
-    { id: 8, name: "Filosofia", icon: "🤔" },
-  ],
-  Tecnico: [
-    { id: 1, name: "Programação", icon: "💻" },
-    { id: 2, name: "Engenharia", icon: "🔧" },
-    { id: 3, name: "Arquitetura", icon: "🏗️" },
-    { id: 4, name: "Robótica", icon: "🤖" },
-    { id: 5, name: "Matemática", icon: "➕" },
-    { id: 6, name: "Química", icon: "⚗️" },
-    { id: 7, name: "Física", icon: "📐" },
-    { id: 8, name: "Astronomia", icon: "🌌" },
-  ],
-};
+import modulesData from "../../Utils/Modulos";
 
 export default function ModulosScreen() {
   const navigation = useNavigation();
 
   const [selectedModule, setSelectedModule] =
-    useState<keyof typeof modulesData>("Basico");
+    useState<keyof typeof modulesData>("UsoDiario");
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredModules = modulesData[selectedModule].filter((module) =>
@@ -66,10 +24,8 @@ export default function ModulosScreen() {
   );
 
   const moduleColors: { [key in keyof typeof modulesData]: string } = {
-    Basico: "#00b4d8",
-    Medio: "#D0BAD7",
-    Avancado: "#FFB74D",
-    Tecnico: "#8BC34A",
+    UsoDiario: "#00b4d8",
+    UsoTecnico: "#D0BAD7"
   };
 
   const handleCardPress = (module: {
@@ -101,10 +57,8 @@ export default function ModulosScreen() {
           onValueChange={(value) => setSelectedModule(value)}
           style={styles.picker}
         >
-          <Picker.Item label="Básico" value="Basico" />
-          <Picker.Item label="Médio" value="Medio" />
-          <Picker.Item label="Avançado" value="Avancado" />
-          <Picker.Item label="Técnico" value="Tecnico" />
+          <Picker.Item label="Uso diário" value="UsoDiario" />
+          <Picker.Item label="Uso técnico" value="UsoTecnico" />
         </Picker>
       </View>
       <View style={styles.searchContainer}>
@@ -197,7 +151,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     marginTop: 8,
-    textAlign: "center",
+    textAlign: "center"
   },
   searchInput: {
     flex: 1,

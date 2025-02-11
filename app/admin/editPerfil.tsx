@@ -18,7 +18,7 @@ type RouteParams = {
   params: {
     userInfo: {
       name: string;
-      email: string;
+      emailOrPhone: string;
       phone: string;
       photo?: string;
       role: string;
@@ -33,7 +33,7 @@ export default function EditProfileScreen() {
 
   const [form, setForm] = useState({
     name: initialUserInfo?.name || "",
-    email: initialUserInfo?.email || "",
+    emailOrPhone: initialUserInfo?.emailOrPhone || "",
     phone: initialUserInfo?.phone || "",
     password: "",
     role: initialUserInfo?.role || "",
@@ -41,7 +41,7 @@ export default function EditProfileScreen() {
 
   const [errors, setErrors] = useState({
     name: "",
-    email: "",
+    emailOrPhone: "",
     phone: "",
     password: "",
     role: "",
@@ -124,7 +124,7 @@ export default function EditProfileScreen() {
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>E-mail</Text>
+            <Text style={styles.label}>E-mail ou Telefone</Text>
             <View style={styles.inputWrapper}>
               <Icon
                 name="email-outline"
@@ -134,14 +134,14 @@ export default function EditProfileScreen() {
               />
               <TextInput
                 style={styles.input}
-                placeholder="Digite seu e-mail"
+                placeholder="Digite seu e-mail ou telefone"
                 placeholderTextColor="#999"
-                value={form.email}
-                onChangeText={(value) => handleChange("email", value)}
+                value={form.emailOrPhone}
+                onChangeText={(value) => handleChange("emailOrPhone", value)}
               />
             </View>
-            {errors.email && (
-              <Text style={styles.errorText}>{errors.email}</Text>
+            {errors.emailOrPhone && (
+              <Text style={styles.errorText}>{errors.emailOrPhone}</Text>
             )}
           </View>
 
@@ -167,7 +167,7 @@ export default function EditProfileScreen() {
             )}
           </View>
 
-          <View style={styles.roleContainer}>
+          {/* <View style={styles.roleContainer}>
             <Text style={styles.label}>Tipo de Usuário:</Text>
             <View style={styles.roles}>
               <TouchableOpacity
@@ -209,7 +209,7 @@ export default function EditProfileScreen() {
             {errors.role && (
               <Text style={styles.errorTextRole}>{errors.role}</Text>
             )}
-          </View>
+          </View> */}
 
           <TouchableOpacity style={styles.button} onPress={handleSave}>
             <Text style={styles.buttonText}>Salvar Alterações</Text>

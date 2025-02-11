@@ -18,9 +18,13 @@ const mockModules = [
         id: 1,
         word: "Palavra 1.1",
         description:
-          "Lorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsum Lorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsum",
+          "ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsum Lorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsum",
         video:
-          "w16n9y3HvrI",
+          "vJW2u13VXQk",
+          status: "Aprovado",
+        modulo: "Básico",
+        categoria: "Saudações",
+        variacao: true,
       },
       {
         id: 2,
@@ -325,8 +329,6 @@ export default function ModulosDetalhesScreen() {
           </TouchableOpacity>
         )}
       />
-
-      {/* <Navbar /> */}
     </View>
   );
 }

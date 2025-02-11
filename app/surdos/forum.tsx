@@ -17,40 +17,46 @@ const ForumInterface = () => {
   const [selectedSection, setSelectedSection] = useState("leis");
   const [searchTerm, setSearchTerm] = useState("");
   const [wordToRequest, setWordToRequest] = useState("");
+  const [urlToRequest, setUrlToRequest] = useState("");
 
   const [requestedWords, setRequestedWords] = useState([
-    { lei: "Olá", url: "" },
-    { lei: "Bom dia", url: "" },
-    { lei: "Boa tarde", url: "" },
-    { lei: "Boa noite", url: "" },
+    { palavra: "Olá", url: "" },
+    { palavra: "Bom dia", url: "" },
+    { palavra: "Boa tarde", url: "" },
+    { palavra: "Boa noite", url: "" },
+    { palavra: "Olá", url: "" },
+    { palavra: "Bom dia", url: "" },
+    { palavra: "Boa tarde", url: "" },
+    { palavra: "Boa noite", url: "" },
   ]);
 
   const [laws, setLaws] = useState([
     {
-      lei: "Lei nº 10.436 - Língua Brasileira de Sinais",
+      palavra: "Lei nº 10.436 - Língua Brasileira de Sinais",
       url: "https://www.planalto.gov.br/ccivil_03/leis/2002/l10436.htm",
     },
     {
-      lei: "Lei nº 12.319 - Regulamentação da profissão de Tradutor e Intérprete",
+      palavra:
+        "Lei nº 12.319 - Regulamentação da profissão de Tradutor e Intérprete",
       url: "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2010/lei/l12319.htm",
     },
     {
-      lei: "Lei nº 13.146 - Lei Brasileira de Inclusão",
+      palavra: "Lei nº 13.146 - Lei Brasileira de Inclusão",
       url: "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2015/lei/l13146.htm",
     },
   ]);
 
   const [news, setNews] = useState([
     {
-      lei: "UFPR abre vagas para curso de Libras",
+      palavra: "UFPR abre vagas para curso de Libras",
       url: "https://www.ufpr.br/curso-libras",
     },
     {
-      lei: "Novo aplicativo de tradução para Libras",
+      palavra: "Novo aplicativo de tradução para Libras",
       url: "https://www.tecnologiaemlibras.com.br",
     },
     {
-      lei: "Evento de inclusão será realizado na cidade",
+      palavra: "Evento de inclusão será realizado na cidade",
       url: "https://www.eventos-inclusao.com.br",
     },
   ]);
@@ -58,7 +64,7 @@ const ForumInterface = () => {
   const handleWordRequest = () => {
     const normalizedWord = wordToRequest.trim().toLowerCase();
     const wordExists = requestedWords.some(
-      (word) => word.lei.toLowerCase() === normalizedWord
+      (word) => word.palavra.toLowerCase() === normalizedWord
     );
 
     if (wordExists) {
@@ -66,40 +72,64 @@ const ForumInterface = () => {
       return;
     }
 
+    const normalizedUrl = urlToRequest.trim().toLowerCase();
+
+    const urlExists = requestedWords.some(
+      (word) => word.url.toLowerCase() === normalizedUrl
+    );
+
+    if (normalizedUrl && urlExists) {
+      Alert.alert("Aviso", "Este link já foi solicitado!");
+      return;
+    }
+
     if (normalizedWord) {
-      setRequestedWords([...requestedWords, { lei: wordToRequest, url: "" }]);
+      setRequestedWords([
+        ...requestedWords,
+        { palavra: wordToRequest, url: normalizedUrl },
+      ]);
       setWordToRequest("");
+      setUrlToRequest("");
       Alert.alert("Sucesso", "Palavra solicitada com sucesso!");
     }
   };
 
-  const filterItems = (items : any) =>
-    items.filter((item : any) =>
-      item.lei.toLowerCase().includes(searchTerm.toLowerCase())
+  const filterItems = (items: any) =>
+    items.filter((item: any) =>
+      item.palavra.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const renderItem = ({ item }: { item: { lei?: string; url?: string; noticia?: string } }) => (
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => {
-          if (item.url) {
-            // Abre o link no navegador
-            Alert.alert(
-              "Abrir Link",
-              `Deseja abrir o link relacionado a esta ${item.lei ? "lei" : "notícia"}?`,
-              [
-                { text: "Cancelar", style: "cancel" },
-                { text: "Abrir", onPress: () => Linking.openURL(item.url!) },
-              ]
-            );
-          } else {
-            Alert.alert("Sem URL", "Este item não possui um link associado.");
-          }
-        }}
-      >
-        <Text style={styles.cardText}>{item.lei || item.noticia || (typeof item === 'string' ? item : '')}</Text>
-      </TouchableOpacity>
-    );
+  const renderItem = ({
+    item,
+  }: {
+    item: { palavra?: string; url?: string; noticia?: string };
+  }) => (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => {
+        if (item.url) {
+          Alert.alert(
+            "Abrir Link",
+            `Deseja abrir o link relacionado a esta ${
+              item.palavra ? "palavra" : "notícia"
+            }?`,
+            [
+              { text: "Cancelar", style: "cancel" },
+              { text: "Abrir", onPress: () => Linking.openURL(item.url!) },
+            ]
+          );
+        } else {
+          Alert.alert("Sem URL", "Este item não possui um link associado.");
+        }
+      }}
+    >
+      <Text style={styles.cardText}>
+        {item.palavra || item.noticia || (typeof item === "string" ? item : "")}
+      </Text>
+
+      {item.url != "" ? <Text style={styles.urlText}>{item.url}</Text> : null}
+    </TouchableOpacity>
+  );  
 
   const renderContent = () => {
     let data = [];
@@ -140,6 +170,41 @@ const ForumInterface = () => {
         </Picker>
       </View>
 
+      {selectedSection === "palavras" && (
+        <View style={styles.wordRequestContainer}>
+          <Text style={styles.cardInformation}>
+            Para solicitar uma nova palavra, você pode enviar apenas o nome da
+            palavra ou um link de referência (como um vídeo do YouTube ou um
+            arquivo no Google Drive). Isso nos ajudará a compreender melhor o
+            contexto e fornecer uma tradução mais precisa.
+          </Text>
+          <View style={{ flexDirection: "column", height: 150, gap: 8 }}>
+            <TextInput
+              style={styles.wordInput}
+              placeholder="Digite uma nova palavra"
+              value={wordToRequest}
+              onChangeText={setWordToRequest}
+            />
+            <TextInput
+              style={styles.wordInput}
+              placeholder="Digite um Link de referência"
+              value={urlToRequest}
+              onChangeText={setUrlToRequest}
+            />
+            <TouchableOpacity
+              style={styles.requestButton}
+              onPress={handleWordRequest}
+            >
+              <Text style={styles.buttonText}>Solicitar</Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.buttonTextSolicitation}>
+            Palavras já solicitadas : {requestedWords.length}
+          </Text>
+        </View>
+      )}
+
       <View style={styles.searchContainer}>
         <Ionicons
           name="search"
@@ -154,23 +219,6 @@ const ForumInterface = () => {
           style={{ flex: 1 }}
         />
       </View>
-
-      {selectedSection === "palavras" && (
-        <View style={styles.wordRequestContainer}>
-          <TextInput
-            style={styles.wordInput}
-            placeholder="Digite uma nova palavra"
-            value={wordToRequest}
-            onChangeText={setWordToRequest}
-          />
-          <TouchableOpacity
-            style={styles.requestButton}
-            onPress={handleWordRequest}
-          >
-            <Text style={styles.buttonText}>Solicitar</Text>
-          </TouchableOpacity>
-        </View>
-      )}
 
       {renderContent()}
 
@@ -223,10 +271,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   wordRequestContainer: {
-    flexDirection: "row",
+    flexDirection: "column",
     padding: 16,
     paddingTop: 0,
     gap: 8,
+    height: 350,
   },
   wordInput: {
     flex: 1,
@@ -242,10 +291,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 8,
     justifyContent: "center",
+    height: 40,
   },
   buttonText: {
     color: "#000",
     fontWeight: "bold",
+    textAlign: "center",
   },
   list: {
     flex: 1,
@@ -279,6 +330,23 @@ const styles = StyleSheet.create({
   searchIcon: {
     marginRight: 8,
     marginLeft: 8,
+  },
+  cardInformation: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#000",
+    borderWidth: 1,
+    padding: 16,
+    borderRadius: 8,
+  },
+  buttonTextSolicitation: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#000",
+    textAlign: "center",
+  },
+  urlText: {
+    marginTop: 8,
   },
 });
 

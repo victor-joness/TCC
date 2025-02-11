@@ -10,25 +10,22 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { Ionicons } from "@expo/vector-icons";
-import {modulosData} from "../../Utils/Modulos"
-
+import modulesData from "../../Utils/Modulos";
 
 export default function ModulosScreen() {
   const navigation = useNavigation();
 
   const [selectedModule, setSelectedModule] =
-    useState<keyof typeof modulosData>("Basico");
+    useState<keyof typeof modulesData>("UsoDiario");
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredModules = modulosData[selectedModule].filter((module) =>
+  const filteredModules = modulesData[selectedModule].filter((module) =>
     module.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const moduleColors: { [key in keyof typeof modulosData]: string } = {
-    Basico: "#00b4d8",
-    Medio: "#D0BAD7",
-    Avancado: "#FFB74D",
-    Tecnico: "#8BC34A",
+  const moduleColors: { [key in keyof typeof modulesData]: string } = {
+    UsoDiario: "#00b4d8",
+    UsoTecnico: "#D0BAD7"
   };
 
   const handleCardPress = (module: {
@@ -60,10 +57,8 @@ export default function ModulosScreen() {
           onValueChange={(value) => setSelectedModule(value)}
           style={styles.picker}
         >
-          <Picker.Item label="Básico" value="Basico" />
-          <Picker.Item label="Médio" value="Medio" />
-          <Picker.Item label="Avançado" value="Avancado" />
-          <Picker.Item label="Técnico" value="Tecnico" />
+          <Picker.Item label="Uso diário" value="UsoDiario" />
+          <Picker.Item label="Uso técnico" value="UsoTecnico" />
         </Picker>
       </View>
       <View style={styles.searchContainer}>
@@ -156,7 +151,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     marginTop: 8,
-    textAlign: "center",
+    textAlign: "center"
   },
   searchInput: {
     flex: 1,
