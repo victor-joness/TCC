@@ -9,35 +9,20 @@ import {
   Alert,
 } from "react-native";
 import { Card } from "~/components/ui/card";
-import { P } from "~/components/ui/typography";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
-
-type RouteParams = {
-  params: {
-    userInfo: {
-      name: string;
-      emailOrPhone: string;
-      phone: string;
-      photo?: string;
-      role: string;
-    };
-  };
-};
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Url } from "~/Utils/Api";
+import axios from "axios";
+import * as FileSystem from "expo-file-system";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function EditProfileScreen() {
-  const route = useRoute<RouteProp<RouteParams, "params">>();
-  const navigation = useNavigation();
-  const { userInfo: initialUserInfo } = route.params;
+  const route = useRoute();
+  const user = route.params?.user;
 
-  const [form, setForm] = useState({
-    name: initialUserInfo?.name || "",
-    emailOrPhone: initialUserInfo?.emailOrPhone || "",
-    phone: initialUserInfo?.phone || "",
-    password: "",
-    role: initialUserInfo?.role || "",
-  });
+  const navigation = useNavigation();
 
   const [errors, setErrors] = useState({
     name: "",
@@ -45,10 +30,25 @@ export default function EditProfileScreen() {
     phone: "",
     password: "",
     role: "",
+    photo: "",
+  });
+
+  const [userInfo, setUserInfo] = useState<{
+    name: string;
+    emailOrPhone: string;
+    phone: string;
+    role: string;
+    photo: string | null;
+  }>({
+    name: user.name,
+    emailOrPhone: user.email,
+    phone: user.phone,
+    role: user.role,
+    photo: user.photo,
   });
 
   const handleChange = (field: string, value: string) => {
-    setForm((prevState) => ({
+    setUserInfo((prevState) => ({
       ...prevState,
       [field]: value,
     }));
@@ -57,8 +57,7 @@ export default function EditProfileScreen() {
   const handleEditPhoto = async () => {
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (permissionResult.granted === false) {
+    if (!permissionResult.granted) {
       Alert.alert("É necessário permissão para acessar a galeria");
       return;
     }
@@ -71,161 +70,239 @@ export default function EditProfileScreen() {
     });
 
     if (!pickerResult.canceled) {
-      console.log("Nova foto selecionada:", pickerResult.assets[0].uri);
+      const photoUri = pickerResult.assets[0].uri;
+
+      const fileName = photoUri.split("/").pop();
+      if (!FileSystem.documentDirectory) {
+        Alert.alert("Erro", "Diretório do sistema de arquivos não disponível.");
+        return;
+      }
+      const newPath = FileSystem.documentDirectory + fileName;
+
+      try {
+        await FileSystem.copyAsync({
+          from: photoUri,
+          to: newPath,
+        });
+      } catch (error) {
+        console.error("Erro ao copiar arquivo:", error);
+        Alert.alert("Erro", "Não foi possível armazenar a foto localmente.");
+        return;
+      }
+
+      const updatedUser = { ...userInfo, photo: newPath };
+
+      setUserInfo(updatedUser);
+
+      try {
+        const token = await AsyncStorage.getItem("Token");
+        await axios.put(`${Url}/users/${user.id}`, updatedUser, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        Alert.alert("Sucesso", "Foto atualizada com sucesso!");
+      } catch (error) {
+        console.error("Erro ao atualizar a foto:", error);
+        Alert.alert("Erro", "Não foi possível atualizar a foto.");
+      }
     }
   };
 
-  const handleSave = () => {
-    console.log("Salvando alterações:", form);
-    navigation.goBack();
+  const handleSave = async () => {
+    try {
+      const token = await AsyncStorage.getItem("Token");
+      const updatedUser = {
+        ...userInfo,
+        id: user.id,
+        name: userInfo.name,
+        email: userInfo.emailOrPhone,
+        phone: userInfo.phone,
+        photo: userInfo.photo,
+      };
+
+      await axios.put(`${Url}/users/${user.id}`, updatedUser, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
+
+      if (userInfo.role === "SURDO") {
+        //@ts-ignore
+        navigation.navigate("surdos/modulos", { user: updatedUser });
+      } else if (userInfo.role === "INTERPRETE") {
+        //@ts-ignore
+        navigation.navigate("interpretes/modulos", { user: updatedUser });
+      } else if (userInfo.role === "ADMIN") {
+        //@ts-ignore
+        navigation.navigate("admin/modulos", { user: updatedUser });
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar perfil:", error);
+      Alert.alert("Erro", "Não foi possível atualizar o perfil.");
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Deletar conta",
+      "Tem certeza que deseja deletar sua conta? Esta ação não pode ser desfeita.",
+      [
+        {
+          text: "Cancelar",
+          style: "cancel",
+        },
+        {
+          text: "Deletar",
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem("Token");
+              await axios.delete(`${Url}/users/${user.id}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+
+              Alert.alert("Sucesso", "Sua conta foi deletada com sucesso!");
+              //@ts-ignore
+              navigation.navigate("auth/login");
+            } catch (error) {
+              console.error("Erro ao deletar conta:", error);
+              Alert.alert("Erro", "Não foi possível deletar a conta.");
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
-    <View style={styles.container}>
-      <Card style={[styles.card, { borderRadius: 0 }]}>
-        <View style={styles.content}>
-          <TouchableOpacity
-            onPress={handleEditPhoto}
-            style={styles.photoContainer}
-          >
-            <View style={styles.photoWrapper}>
-              {initialUserInfo?.photo ? (
-                <Image
-                  source={{ uri: initialUserInfo.photo }}
-                  style={styles.photo}
-                />
-              ) : (
-                <View style={[styles.photo, styles.photoPlaceholder]} />
-              )}
-              <View style={styles.editPhotoButton}>
-                <Icon name="pencil" size={20} color="#0B8DCD" />
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+      <View style={styles.container}>
+        <Card style={[styles.card, { borderRadius: 0 }]}>
+          <View style={styles.content}>
+            <TouchableOpacity
+              onPress={handleEditPhoto}
+              style={styles.photoContainer}
+            >
+              <View style={styles.photoWrapper}>
+                {userInfo?.photo ? (
+                  <Image
+                    source={{ uri: userInfo.photo }}
+                    style={styles.photo}
+                  />
+                ) : (
+                  <View style={[styles.photo, styles.photoPlaceholder]} />
+                )}
+                <View style={styles.editPhotoButton}>
+                  <Icon name="pencil" size={20} color="#0B8DCD" />
+                </View>
               </View>
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Nome</Text>
-            <View style={styles.inputWrapper}>
-              <Icon
-                name="account-outline"
-                size={20}
-                color="#0B8DCD"
-                style={styles.icon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Digite seu nome"
-                placeholderTextColor="#999"
-                value={form.name}
-                onChangeText={(value) => handleChange("name", value)}
-              />
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Nome</Text>
+              <View style={styles.inputWrapper}>
+                <Icon
+                  name="account-outline"
+                  size={20}
+                  color="#0B8DCD"
+                  style={styles.icon}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Digite seu nome"
+                  placeholderTextColor="#999"
+                  value={userInfo.name}
+                  onChangeText={(value) => handleChange("name", value)}
+                />
+              </View>
+              {errors.name && (
+                <Text style={styles.errorText}>{errors.name}</Text>
+              )}
             </View>
-            {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>E-mail</Text>
+              <View style={styles.inputWrapper}>
+                <Icon
+                  name="email-outline"
+                  size={20}
+                  color="#0B8DCD"
+                  style={styles.icon}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Digite seu e-mail"
+                  placeholderTextColor="#999"
+                  value={userInfo.emailOrPhone}
+                  onChangeText={(value) => handleChange("emailOrPhone", value)}
+                  editable={false}
+                />
+              </View>
+              {errors.emailOrPhone && (
+                <Text style={styles.errorText}>{errors.emailOrPhone}</Text>
+              )}
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Telefone</Text>
+              <View style={styles.inputWrapper}>
+                <Icon
+                  name="phone-outline"
+                  size={20}
+                  color="#0B8DCD"
+                  style={styles.icon}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Digite seu telefone"
+                  placeholderTextColor="#999"
+                  value={userInfo.phone}
+                  onChangeText={(value) => handleChange("phone", value)}
+                />
+              </View>
+              {errors.phone && (
+                <Text style={styles.errorText}>{errors.phone}</Text>
+              )}
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>URL da Foto</Text>
+              <View style={styles.inputWrapper}>
+                <Icon
+                  name="image-outline"
+                  size={20}
+                  color="#0B8DCD"
+                  style={styles.icon}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Cole a URL da sua foto"
+                  placeholderTextColor="#999"
+                  value={userInfo.photo ?? ""}
+                  onChangeText={(value) => handleChange("photo", value)}
+                />
+              </View>
+              {errors.photo && (
+                <Text style={styles.errorText}>{errors.photo}</Text>
+              )}
+            </View>
+
+            <TouchableOpacity style={styles.button} onPress={handleSave}>
+              <Text style={styles.buttonText}>Salvar Alterações</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={handleDeleteAccount}
+            >
+              <Text style={styles.deleteButtonText}>Deletar Conta</Text>
+            </TouchableOpacity>
           </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>E-mail ou Telefone</Text>
-            <View style={styles.inputWrapper}>
-              <Icon
-                name="email-outline"
-                size={20}
-                color="#0B8DCD"
-                style={styles.icon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Digite seu e-mail ou telefone"
-                placeholderTextColor="#999"
-                value={form.emailOrPhone}
-                onChangeText={(value) => handleChange("emailOrPhone", value)}
-              />
-            </View>
-            {errors.emailOrPhone && (
-              <Text style={styles.errorText}>{errors.emailOrPhone}</Text>
-            )}
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Telefone</Text>
-            <View style={styles.inputWrapper}>
-              <Icon
-                name="phone-outline"
-                size={20}
-                color="#0B8DCD"
-                style={styles.icon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Digite seu telefone"
-                placeholderTextColor="#999"
-                value={form.phone}
-                onChangeText={(value) => handleChange("phone", value)}
-              />
-            </View>
-            {errors.phone && (
-              <Text style={styles.errorText}>{errors.phone}</Text>
-            )}
-          </View>
-
-          {/* <View style={styles.roleContainer}>
-            <Text style={styles.label}>Tipo de Usuário:</Text>
-            <View style={styles.roles}>
-              <TouchableOpacity
-                style={[
-                  styles.roleBox,
-                  { backgroundColor: "#0B8DCD" },
-                  form.role === "Surdo" && styles.roleBoxSelected,
-                ]}
-                onPress={() => handleChange("role", "Surdo")}
-              >
-                <View style={styles.img}>
-                  <Image
-                    source={require("~/assets/images/surdo_register.png")}
-                    style={styles.image}
-                    resizeMode="contain"
-                  />
-                </View>
-                <Text style={styles.roleText}>Sou surdo</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.roleBox,
-                  { backgroundColor: "#49DA80" },
-                  form.role === "Interprete" && styles.roleBoxSelected,
-                ]}
-                onPress={() => handleChange("role", "Interprete")}
-              >
-                <View style={styles.img}>
-                  <Image
-                    source={require("~/assets/images/interprete_register.png")}
-                    style={styles.image}
-                    resizeMode="contain"
-                  />
-                </View>
-                <Text style={styles.roleText}>Sou Intérprete</Text>
-              </TouchableOpacity>
-            </View>
-            {errors.role && (
-              <Text style={styles.errorTextRole}>{errors.role}</Text>
-            )}
-          </View> */}
-
-          <TouchableOpacity style={styles.button} onPress={handleSave}>
-            <Text style={styles.buttonText}>Salvar Alterações</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={() => {
-              console.log("Deletar conta");
-            }}
-          >
-            <Text style={styles.deleteButtonText}>Deletar Conta</Text>
-          </TouchableOpacity>
-        </View>
-      </Card>
-    </View>
+        </Card>
+      </View>
+    </SafeAreaView>
   );
 }
 

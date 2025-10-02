@@ -46,10 +46,7 @@ export default function OnboardingScreen({ screenNumber = 3 }: any) {
         <View style={styles.container}>
           <View style={styles.infosContainer}>
             <H2 style={{ textAlign: "center", color: "#000" }}>
-              Este aplicativo foi desenvolvido como parte do Trabalho de
-              Conclusão de Curso (TCC) por dois alunos. O objetivo principal é
-              promover a inclusão e facilitar a comunicação entre pessoas surdas
-              e a comunidade.
+              Nosso objetivo é aproximar pessoas, promover a inclusão e facilitar o aprendizado da Libras de forma simples, visual e confiável.
             </H2>
             <View style={styles.redesocial}>
               <P style={{ color: "#fff", fontWeight: "bold" }}>Contato:</P>

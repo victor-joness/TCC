@@ -6,30 +6,42 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  ToastAndroid,
+  Alert,
 } from "react-native";
 import { Card } from "~/components/ui/card";
 import { P } from "~/components/ui/typography";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { z } from "zod";
+import { Url } from "~/Utils/Api";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneRegex = /^\d{11,}$/;
 
 const schema = z.object({
   emailOrPhone: z
-      .string()
-      .min(1, "Informe um telefone ou e-mail.")
-      .refine(
-        (value) => emailRegex.test(value) || phoneRegex.test(value),
-        "Insira um e-mail ou telefone válido. O telefone deve conter 11 números."
-      ),
-  password: z.string().min(5, "A senha deve ter no mínimo 5 caracteres."),
+    .string()
+    .min(1, "Informe um telefone ou e-mail.")
+    .refine(
+      (value) => emailRegex.test(value) || phoneRegex.test(value),
+      "Insira um e-mail ou telefone válido. O telefone deve conter 11 números."
+    ),
+  password: z.string().min(7, "A senha deve ter no mínimo 7 caracteres."),
 });
 
 export default function Screen() {
-  const [form, setForm] = React.useState({ emailOrPhone: "", password: "" });
-  const [errors, setErrors] = React.useState({ emailOrPhone: "", password: "" });
+  const route = useRoute();
+  // @ts-ignore
+  const email = route.params?.email || "";
+
+  const [form, setForm] = React.useState({ emailOrPhone: email, password: "" });
+  const [errors, setErrors] = React.useState({
+    emailOrPhone: "",
+    password: "",
+  });
   const navigation = useNavigation();
 
   const handleChange = (field: string, value: string) => {
@@ -39,29 +51,87 @@ export default function Screen() {
     }));
   };
 
-  const handleLogin = () => {
+  type LoginRequestDTO = {
+    email: String;
+    password: String;
+  };
+
+  const loginRequest = async (data: LoginRequestDTO) => {
     try {
+      const result = await axios.post(`${Url}/auth/login`, data);
+      let userId = result.data.data.id;
+      let token = result.data.data.token;
+      let user = {};
+
+      if (result.status == 200) {
+        user = await axios.get(`${Url}/users/${userId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        await AsyncStorage.setItem("Token", token);
+
+        return user;
+      } else {
+        console.log("teste", result);
+        ToastAndroid.show("Login invalido, tente novamente", 5000);
+      }
+
+      return user;
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message || "Erro desconhecido, tente novamente";
+
+      if (errorMessage.includes("User.getVerified()")) {
+        //@ts-ignore
+        navigation.navigate("auth/code", { email: data.email });
+        return;
+      } else {
+        ToastAndroid.show(errorMessage, ToastAndroid.LONG);
+      }
+    }
+  };
+
+  const handleLogin = async () => {
+    try {
+      // Validação dos campos
       schema.parse(form);
       setErrors({ emailOrPhone: "", password: "" });
-      console.log("Login com sucesso:", form);
 
-      if(form.emailOrPhone === "admin@gmail.com" && form.password === "admin") {
-        navigation.navigate("admin/modulos" as never)
-      }
-
-      if(form.emailOrPhone === "surdo@gmail.com" && form.password === "surdo") {
-        navigation.navigate("surdos/modulos" as never)
-      }
-
-      if(form.emailOrPhone === "interprete@gmail.com" && form.password === "interprete") {
-        navigation.navigate("interpretes/modulos" as never)
-      }
-    } catch (e: any) {
-      const validationErrors: any = {};
-      e.errors.forEach((error: any) => {
-        validationErrors[error.path[0]] = error.message;
+      // Faz login
+      const res = await loginRequest({
+        email: form.emailOrPhone,
+        password: form.password,
       });
-      setErrors(validationErrors);
+
+      const user = res.data;
+      const role = user.role;
+
+      // Navegação conforme o cargo
+      if (role === "ADMIN") {
+        //@ts-ignore
+        navigation.navigate("admin/modulos", { user });
+      } else if (role === "INTERPRETE") {
+        //@ts-ignore
+        navigation.navigate("interpretes/modulos", { user });
+      } else if (role === "SURDO") {
+        //@ts-ignore
+        navigation.navigate("surdos/modulos", { user });
+      } else {
+        Alert.alert("Erro", "Cargo de usuário desconhecido.");
+      }
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        const validationErrors: any = {};
+        error.errors.forEach((err: any) => {
+          validationErrors[err.path[0]] = err.message;
+        });
+        setErrors(validationErrors);
+      } else {
+        Alert.alert("Erro ao fazer login", "Verifique suas credenciais.");
+        console.error("Erro no login:", error);
+      }
     }
   };
 
@@ -79,7 +149,7 @@ export default function Screen() {
         <View style={styles.container}>
           <Card style={[styles.card, { borderRadius: 0 }]}>
             <View style={styles.loginSection}>
-            <P
+              <P
                 style={{
                   textAlign: "center",
                   fontWeight: "bold",
@@ -87,7 +157,7 @@ export default function Screen() {
                   color: "#000",
                 }}
               >
-                Logue com sua conta
+                Entre com sua conta
               </P>
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>E-mail ou Telefone</Text>
@@ -103,7 +173,9 @@ export default function Screen() {
                     placeholder="Digite seu e-mail ou telefone"
                     placeholderTextColor="#999"
                     value={form.emailOrPhone}
-                    onChangeText={(value) => handleChange("emailOrPhone", value)}
+                    onChangeText={(value) =>
+                      handleChange("emailOrPhone", value)
+                    }
                   />
                 </View>
                 {errors.emailOrPhone && (
@@ -175,7 +247,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
-    padding: 30
+    padding: 30,
   },
   loginSection: {
     flex: 1,

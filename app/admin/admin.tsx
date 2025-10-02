@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,9 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import { Picker } from "@react-native-picker/picker";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import axios from "axios";
+import { Url } from "~/Utils/Api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export type Word = {
   id: number;
@@ -21,176 +24,199 @@ export type Word = {
   video: string;
   status: string;
   modulo: string;
+  request_word_id: number;
   categoria: string;
   interprete: string;
   variacoes: string[];
 };
 
+const api = axios.create({
+  baseURL: Url,
+  headers: {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  },
+});
+
+api.interceptors.request.use(
+  async (config) => {
+    const token = await AsyncStorage.getItem("Token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 const AdminScreen = () => {
   const [selectedSection, setSelectedSection] = useState("palavras");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Dados do backend
+  const [initialWords, setInitialWords] = useState<Word[]>([]);
+  const [news, setNews] = useState<
+    { id: number; title: string; resume: string; link: string }[]
+  >([]);
+  const [laws, setLaws] = useState<
+    { id: number; title: string; resume: string; link: string }[]
+  >([]);
+  const [interpreters, setInterpreters] = useState<
+    { id: number; name: string; email: string }[]
+  >([]);
+
+  // Formulários e estados de edição
   const [newLaw, setNewLaw] = useState("");
   const [newLawLink, setNewLawLink] = useState("");
   const [newNews, setNewNews] = useState("");
   const [newNewsLink, setNewNewsLink] = useState("");
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [newInterpreterName, setNewInterpreterName] = useState("");
+  const [newInterpreterContact, setNewInterpreterContact] = useState("");
+  const [editingNewsId, setEditingNewsId] = useState<number | null>(null);
+  const [editingLawId, setEditingLawId] = useState<number | null>(null);
+  const [editingInterpreterId, setEditingInterpreterId] = useState<
+    number | null
+  >(null);
 
-  const initialWords: Word[] = [
-    {
-      id: 1,
-      word: "Olá",
-      description: "Saudação informal em Libras",
-      video: "https://youtube.com/watch?v=example1",
-      status: "pending",
-      modulo: "Basico",
-      categoria: "Saudações",
-      interprete: "João Silva",
-      variacoes: ["Oi", "Oi, tudo bem?", "Oi, como vai?"],
-    },
-    {
-      id: 2,
-      word: "Bom dia",
-      description: "Saudação matinal em Libras",
-      video: "https://youtube.com/watch?v=example2",
-      status: "pending",
-      modulo: "Basico",
-      categoria: "Saudações",
-      interprete: "Maria Oliveira",
-      variacoes: ["Bom dia", "Boa tarde", "Boa noite"],
-    },
-  ];
+  const navigation = useNavigation();
 
-  const [laws, setLaws] = useState([
-    {
-      id: 1,
-      text: "Lei nº 10.436 - Língua Brasileira de Sinais",
-      link: "http://www.planalto.gov.br/ccivil_03/leis/2002/l10436.htm",
-    },
-    {
-      id: 2,
-      text: "Lei nº 12.319 - Regulamentação da profissão de Tradutor e Intérprete",
-      link: "http://www.planalto.gov.br/ccivil_03/_ato2007-2010/2010/lei/l12319.htm",
-    },
-    {
-      id: 3,
-      text: "Lei nº 13.146 - Lei Brasileira de Inclusão",
-      link: "http://www.planalto.gov.br/ccivil_03/_ato2015-2018/2015/lei/l13146.htm",
-    },
-  ]);
+  // Carrega os dados do backend
+  useEffect(() => {
+    api
+      .get<Word[]>("/words/status/PENDING")
+      .then((r) => setInitialWords(r.data))
+      .catch(() => Alert.alert("Erro", "Falha ao carregar palavras"));
 
-  const [news, setNews] = useState([
-    {
-      id: 1,
-      text: "UFPR abre vagas para curso de Libras",
-      link: "https://www.ufpr.br/noticias",
-    },
-    {
-      id: 2,
-      text: "Novo aplicativo de tradução para Libras",
-      link: "https://exemplo.com/noticia1",
-    },
-    {
-      id: 3,
-      text: "Evento de inclusão será realizado na cidade",
-      link: "https://exemplo.com/noticia2",
-    },
-  ]);
+    api
+      .get("/news")
+      .then((r) => setNews(r.data))
+      .catch(() => Alert.alert("Erro", "Falha ao carregar notícias"));
 
-  const getFilteredWords = () => {
-    return initialWords.filter((word) =>
+    api
+      .get("/laws")
+      .then((r) => setLaws(r.data))
+      .catch(() => Alert.alert("Erro", "Falha ao carregar leis"));
+
+    api
+      .get("/interpreters")
+      .then((r) => setInterpreters(r.data))
+      .catch(() => Alert.alert("Erro", "Falha ao carregar intérpretes"));
+  }, []);
+
+  // Filtrar palavras, notícias e leis pelo searchQuery
+  const getFilteredWords = () =>
+    initialWords.filter((word) =>
       word.word.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  };
 
-  const getFilteredNews = () => {
-    return news.filter((newsItem) =>
-      newsItem.text.toLowerCase().includes(searchQuery.toLowerCase())
+  const getFilteredNews = () =>
+    news.filter((newsItem) =>
+      newsItem.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+  const getFilteredLaws = () =>
+    laws.filter((law) =>
+      law.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+  // Funções para manipular palavras (status)
+  const handleWordStatus = (word: Word, newStatus: string) => {
+    Alert.alert(
+      "Confirmar alteração",
+      `Deseja alterar o status para ${
+        newStatus.toUpperCase() == "APPROVED" ? "Aprovado" : "Rejeitado"
+      }?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Confirmar",
+          onPress: async () => {
+            try {
+              // Atualiza a tabela de request (request_word)
+              await api.put(`/words/${word.request_word_id}/status`, {
+                status: newStatus.toUpperCase(),
+              });
+
+              await api.put(`/words/${word.id}`, {
+                status: newStatus.toUpperCase(),
+              });
+
+              setInitialWords((words) => words.filter((w) => w.id !== word.id));
+
+              Alert.alert("Sucesso", "Status atualizado com sucesso!");
+            } catch (error) {
+              console.log("Erro ao atualizar status:", error);
+              Alert.alert("Erro", "Falha ao atualizar status.");
+            }
+          },
+        },
+      ]
     );
   };
 
-  const getFilteredLaws = () => {
-    return laws.filter((law) =>
-      law.text.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+  const handleWordInfo = (word: Word) => {
+    // @ts-ignore
+    navigation.navigate("admin/adminDetalhePalavra", { word });
   };
 
+  // Funções para manipular notícias
   const addNews = () => {
     if (newNews.trim() && newNewsLink.trim()) {
-      if (editingId !== null) {
-        setNews(
-          news.map((item) =>
-            item.id === editingId
-              ? { ...item, text: newNews, link: newNewsLink }
-              : item
-          )
-        );
-        setEditingId(null);
+      if (editingNewsId !== null) {
+        api
+          .put(`/news/${editingNewsId}`, {
+            title: newNews,
+            link: newNewsLink,
+            resume: "",
+          })
+          .then((r) => {
+            setNews((n) =>
+              n.map((item) => (item.id === editingNewsId ? r.data : item))
+            );
+            setEditingNewsId(null);
+            setNewNews("");
+            setNewNewsLink("");
+          })
+          .catch(() => Alert.alert("Erro", "Falha ao editar notícia"));
       } else {
-        const newId = Math.max(...news.map((item) => item.id), 0) + 1;
-        setNews([...news, { id: newId, text: newNews, link: newNewsLink }]);
+        api
+          .post("/news", {
+            id: 0,
+            title: newNews,
+            link: newNewsLink,
+            resume: "",
+          })
+          .then((r) => {
+            setNews((n) => [...n, r.data]);
+            setNewNews("");
+            setNewNewsLink("");
+          })
+          .catch(() => Alert.alert("Erro", "Falha ao adicionar notícia"));
       }
-      setNewNews("");
-      setNewNewsLink("");
     } else {
       Alert.alert("Erro", "Por favor, preencha o título e o link da notícia.");
     }
   };
 
-  const addLaw = () => {
-    if (newLaw.trim() && newLawLink.trim()) {
-      if (editingId !== null) {
-        setLaws(
-          laws.map((item) =>
-            item.id === editingId
-              ? { ...item, text: newLaw, link: newLawLink }
-              : item
-          )
-        );
-        setEditingId(null);
-      } else {
-        const newId = Math.max(...laws.map((item) => item.id), 0) + 1;
-        setLaws([...laws, { id: newId, text: newLaw, link: newLawLink }]);
-      }
-      setNewLaw("");
-      setNewLawLink("");
-    } else {
-      Alert.alert("Erro", "Por favor, preencha o título e o link da lei.");
-    }
+  const handleEditNews = (id: number, text: string, link: string) => {
+    setEditingNewsId(id);
+    setNewNews(text);
+    setNewNewsLink(link);
   };
 
-  const handleEdit = (
-    id: number,
-    text: string,
-    link: string,
-    type: "law" | "news"
-  ) => {
-    setEditingId(id);
-    if (type === "law") {
-      setNewLaw(text);
-      setNewLawLink(link);
-    } else {
-      setNewNews(text);
-      setNewNewsLink(link);
-    }
-  };
-
-  const handleDelete = (id: number, type: "law" | "news") => {
+  const handleDeleteNews = (id: number) => {
     Alert.alert(
       "Confirmar exclusão",
-      "Tem certeza que deseja excluir este item?",
+      "Tem certeza que deseja excluir esta notícia?",
       [
-        {
-          text: "Cancelar",
-          style: "cancel",
-        },
+        { text: "Cancelar", style: "cancel" },
         {
           text: "Excluir",
           onPress: () => {
-            if (type === "law") {
-              setLaws(laws.filter((item) => item.id !== id));
-            } else {
-              setNews(news.filter((item) => item.id !== id));
-            }
+            api
+              .delete(`/news/${id}`)
+              .then(() => setNews((n) => n.filter((item) => item.id !== id)))
+              .catch(() => Alert.alert("Erro", "Falha ao excluir a notícia"));
           },
           style: "destructive",
         },
@@ -198,6 +224,135 @@ const AdminScreen = () => {
     );
   };
 
+  // Funções para manipular leis
+  const addLaw = () => {
+    if (newLaw.trim() && newLawLink.trim()) {
+      if (editingLawId !== null) {
+        api
+          .put(`/laws/${editingLawId}`, {
+            title: newLaw,
+            link: newLawLink,
+            resume: "",
+          })
+          .then((r) => {
+            setLaws((l) =>
+              l.map((item) => (item.id === editingLawId ? r.data : item))
+            );
+            setEditingLawId(null);
+            setNewLaw("");
+            setNewLawLink("");
+          })
+          .catch(() => Alert.alert("Erro", "Falha ao editar lei"));
+      } else {
+        api
+          .post("/laws", {
+            id: 0,
+            title: newLaw,
+            link: newLawLink,
+            resume: "",
+          })
+          .then((r) => {
+            setLaws((l) => [...l, r.data]);
+            setNewLaw("");
+            setNewLawLink("");
+          })
+          .catch(() => Alert.alert("Erro", "Falha ao adicionar lei"));
+      }
+    } else {
+      Alert.alert("Erro", "Por favor, preencha o título e o link da lei.");
+    }
+  };
+
+  const handleEditLaw = (id: number, text: string, link: string) => {
+    setEditingLawId(id);
+    setNewLaw(text);
+    setNewLawLink(link);
+  };
+
+  const handleDeleteLaw = (id: number) => {
+    Alert.alert(
+      "Confirmar exclusão",
+      "Tem certeza que deseja excluir esta lei?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Excluir",
+          onPress: () => {
+            api
+              .delete(`/laws/${id}`)
+              .then(() => setLaws((l) => l.filter((item) => item.id !== id)))
+              .catch(() => Alert.alert("Erro", "Falha ao excluir a lei"));
+          },
+          style: "destructive",
+        },
+      ]
+    );
+  };
+
+  // Funções para manipular intérpretes
+  const addInterpreter = () => {
+    if (newInterpreterName.trim() && newInterpreterContact.trim()) {
+      if (editingInterpreterId !== null) {
+        api
+          .put(`/interpreters/${editingInterpreterId}`, {
+            name: newInterpreterName,
+            email: newInterpreterContact,
+          })
+          .then((r) => {
+            setInterpreters((i) =>
+              i.map((item) =>
+                item.id === editingInterpreterId ? r.data : item
+              )
+            );
+            setEditingInterpreterId(null);
+            setNewInterpreterName("");
+            setNewInterpreterContact("");
+          })
+          .catch(() => Alert.alert("Erro", "Falha ao editar intérprete"));
+      } else {
+        api
+          .post("/interpreters", {
+            id: 0,
+            name: newInterpreterName,
+            email: newInterpreterContact,
+          })
+          .then((r) => {
+            setInterpreters((i) => [...i, r.data]);
+            setNewInterpreterName("");
+            setNewInterpreterContact("");
+          })
+          .catch(() => Alert.alert("Erro", "Falha ao adicionar intérprete"));
+      }
+    } else {
+      Alert.alert("Erro", "Preencha o nome e o contato do intérprete.");
+    }
+  };
+
+  const handleEditInterpreter = (id: number, name: string, contact: string) => {
+    setEditingInterpreterId(id);
+    setNewInterpreterName(name);
+    setNewInterpreterContact(contact);
+  };
+
+  const handleDeleteInterpreter = (id: number) => {
+    Alert.alert("Confirmar exclusão", "Deseja excluir este intérprete?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Excluir",
+        onPress: () => {
+          api
+            .delete(`/interpreters/${id}`)
+            .then(() =>
+              setInterpreters((i) => i.filter((item) => item.id !== id))
+            )
+            .catch(() => Alert.alert("Erro", "Falha ao excluir intérprete"));
+        },
+        style: "destructive",
+      },
+    ]);
+  };
+
+  // Função para abrir link
   const handleOpenLink = async (link: string) => {
     try {
       const supported = await Linking.canOpenURL(link);
@@ -211,45 +366,20 @@ const AdminScreen = () => {
     }
   };
 
-  const navigation = useNavigation();
-
-  const handleWordInfo = (word: Word) => {
-    //@ts-ignore
-    navigation.navigate("admin/adminDetalhePalavra", { word });
-  };
-
-  const handleWordStatus = (id: number, newStatus: string) => {
-    Alert.alert(
-      "Confirmar alteração",
-      `Deseja alterar o status para ${newStatus}?`,
-      [
-        {
-          text: "Cancelar",
-          style: "cancel",
-        },
-        {
-          text: "Confirmar",
-          onPress: () => {
-            Alert.alert("Sucesso", "Status atualizado com sucesso!");
-          },
-        },
-      ]
-    );
-  };
-
+  // Render itens Palavras
   const renderWordItem = ({ item }: { item: Word }) => (
     <View style={styles.wordItem}>
       <Text style={styles.wordText}>{item.word}</Text>
       <View style={styles.actionButtons}>
         <TouchableOpacity
           style={styles.iconButton}
-          onPress={() => handleWordStatus(item.id, "Aprovado")}
+          onPress={() => handleWordStatus(item, "APPROVED")}
         >
           <Icon name="check-circle" size={24} color="#8CAF50" />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.iconButton}
-          onPress={() => handleWordStatus(item.id, "Rejeitado")}
+          onPress={() => handleWordStatus(item, "REJECTED")}
         >
           <Icon name="cancel" size={24} color="#F44336" />
         </TouchableOpacity>
@@ -267,7 +397,7 @@ const AdminScreen = () => {
     item,
     type,
   }: {
-    item: { id: number; text: string; link: string };
+    item: { id: number; title: string; resume: string; link: string };
     type: "law" | "news";
   }) => (
     <View style={styles.card}>
@@ -275,19 +405,27 @@ const AdminScreen = () => {
         style={styles.cardContent}
         onPress={() => handleOpenLink(item.link)}
       >
-        <Text style={styles.cardText}>{item.text}</Text>
+        <Text style={styles.cardText}>{item.title}</Text>
         <Text style={styles.cardLink}>{item.link}</Text>
       </TouchableOpacity>
       <View style={styles.cardActions}>
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={() => handleEdit(item.id, item.text, item.link, type)}
+          onPress={() =>
+            type === "law"
+              ? handleEditLaw(item.id, item.title, item.link)
+              : handleEditNews(item.id, item.title, item.link)
+          }
         >
           <Icon name="edit" size={24} color="#2196F3" />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={() => handleDelete(item.id, type)}
+          onPress={() =>
+            type === "law"
+              ? handleDeleteLaw(item.id)
+              : handleDeleteNews(item.id)
+          }
         >
           <Icon name="delete" size={24} color="#F44336" />
         </TouchableOpacity>
@@ -295,151 +433,19 @@ const AdminScreen = () => {
     </View>
   );
 
-  const renderNewsList = () => (
-    <View style={styles.sectionContainer}>
-      <View style={styles.addContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Título da noticia"
-          value={newNews}
-          onChangeText={setNewNews}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Link da noticia"
-          value={newNewsLink}
-          onChangeText={setNewNewsLink}
-        />
-        <TouchableOpacity
-          style={[styles.addButton, editingId !== null && styles.editButton]}
-          onPress={addNews}
-        >
-          <Text style={styles.addButtonText}>
-            {editingId !== null ? "Editar" : "Adicionar"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.listContainer}>
-        <FlatList
-          data={getFilteredNews()}
-          renderItem={({ item }) => renderItem({ item, type: "news" })}
-          keyExtractor={(item) => item.id.toString()}
-          style={styles.list}
-        />
-      </View>
-    </View>
-  );
-
-  const renderLawsList = () => (
-    <View style={styles.sectionContainer}>
-      <View style={styles.addContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Título da lei"
-          value={newLaw}
-          onChangeText={setNewLaw}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Link da lei"
-          value={newLawLink}
-          onChangeText={setNewLawLink}
-        />
-        <TouchableOpacity
-          style={[styles.addButton, editingId !== null && styles.editButton]}
-          onPress={addLaw}
-        >
-          <Text style={styles.addButtonText}>
-            {editingId !== null ? "Editar" : "Adicionar"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.listContainer}>
-        <FlatList
-          data={getFilteredLaws()}
-          renderItem={({ item }) => renderItem({ item, type: "law" })}
-          keyExtractor={(item) => item.id.toString()}
-          style={styles.list}
-        />
-      </View>
-    </View>
-  );
-
-  const [interpreters, setInterpreters] = useState([
-    { id: 1, name: "João Silva", contact: "joao@email.com" },
-    { id: 2, name: "Maria Oliveira", contact: "maria@email.com" },
-  ]);
-
-  const [newInterpreterName, setNewInterpreterName] = useState("");
-  const [newInterpreterContact, setNewInterpreterContact] = useState("");
-  const [editingInterpreterId, setEditingInterpreterId] = useState<
-    number | null
-  >(null);
-
-  const addInterpreter = () => {
-    if (newInterpreterName.trim() && newInterpreterContact.trim()) {
-      if (editingInterpreterId !== null) {
-        setInterpreters(
-          interpreters.map((item) =>
-            item.id === editingInterpreterId
-              ? {
-                  ...item,
-                  name: newInterpreterName,
-                  contact: newInterpreterContact,
-                }
-              : item
-          )
-        );
-        setEditingInterpreterId(null);
-      } else {
-        const newId = Math.max(...interpreters.map((item) => item.id), 0) + 1;
-        setInterpreters([
-          ...interpreters,
-          {
-            id: newId,
-            name: newInterpreterName,
-            contact: newInterpreterContact,
-          },
-        ]);
-      }
-      setNewInterpreterName("");
-      setNewInterpreterContact("");
-    } else {
-      Alert.alert("Erro", "Preencha o nome e o contato do intérprete.");
-    }
-  };
-
-  const handleEditInterpreter = (id: number, name: string, contact: string) => {
-    setEditingInterpreterId(id);
-    setNewInterpreterName(name);
-    setNewInterpreterContact(contact);
-  };
-
-  const handleDeleteInterpreter = (id: number) => {
-    Alert.alert("Confirmar exclusão", "Deseja excluir este intérprete?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Excluir",
-        onPress: () =>
-          setInterpreters(interpreters.filter((item) => item.id !== id)),
-        style: "destructive",
-      },
-    ]);
-  };
-
   const renderInterpreterItem = ({
     item,
   }: {
-    item: { id: number; name: string; contact: string };
+    item: { id: number; name: string; email: string };
   }) => (
     <View style={styles.card}>
-      <Text style={styles.cardText}>{item.name}</Text>
-      <Text style={styles.cardLink}>{item.contact}</Text>
+      <View style={styles.cardContent}>
+        <Text style={styles.cardText}>{item.name}</Text>
+        <Text style={styles.cardLink}>{item.email}</Text>
+      </View>
       <View style={styles.cardActions}>
         <TouchableOpacity
-          onPress={() =>
-            handleEditInterpreter(item.id, item.name, item.contact)
-          }
+          onPress={() => handleEditInterpreter(item.id, item.name, item.email)}
           style={styles.actionButton}
         >
           <Icon name="edit" size={24} color="#2196F3" />
@@ -454,38 +460,9 @@ const AdminScreen = () => {
     </View>
   );
 
-  const renderInterpreteList = () => (
-    <View style={styles.sectionContainer}>
-      <View style={styles.addContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Nome"
-          value={newInterpreterName}
-          onChangeText={setNewInterpreterName}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={newInterpreterContact}
-          onChangeText={setNewInterpreterContact}
-        />
-        <TouchableOpacity style={styles.addButton} onPress={addInterpreter}>
-          <Text style={styles.addButtonText}>
-            {editingInterpreterId !== null ? "Editar" : "Adicionar"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-      <FlatList
-        data={interpreters}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderInterpreterItem}
-        style={styles.list}
-      />
-    </View>
-  );
-
   return (
     <View style={styles.container}>
+      {/* Header com busca e seletor de seção */}
       <View style={styles.header}>
         <View style={styles.searchContainer}>
           <Ionicons
@@ -501,12 +478,14 @@ const AdminScreen = () => {
             onChangeText={setSearchQuery}
           />
         </View>
+
         <View style={styles.pickerContainer}>
           <Picker
             selectedValue={selectedSection}
             onValueChange={(value) => {
               setSelectedSection(value);
-              setEditingId(null);
+              setEditingLawId(null);
+              setEditingNewsId(null);
               setNewLaw("");
               setNewLawLink("");
               setNewNews("");
@@ -522,6 +501,7 @@ const AdminScreen = () => {
         </View>
       </View>
 
+      {/* Seção Palavras */}
       {selectedSection === "palavras" && (
         <FlatList
           data={getFilteredWords()}
@@ -530,25 +510,122 @@ const AdminScreen = () => {
           style={styles.list}
         />
       )}
-      {selectedSection === "noticias" && renderNewsList()}
-      {selectedSection === "leis" && renderLawsList()}
 
+      {/* Seção Notícias */}
+      {selectedSection === "noticias" && (
+        <View style={styles.sectionContainer}>
+          <View style={styles.addContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Título da notícia"
+              value={newNews}
+              onChangeText={setNewNews}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Link da notícia"
+              value={newNewsLink}
+              onChangeText={setNewNewsLink}
+            />
+            <TouchableOpacity
+              style={[
+                styles.addButton,
+                editingNewsId !== null && styles.editButton,
+              ]}
+              onPress={addNews}
+            >
+              <Text style={styles.addButtonText}>
+                {editingNewsId !== null ? "Editar" : "Adicionar"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={getFilteredNews()}
+            renderItem={({ item }) => renderItem({ item, type: "news" })}
+            keyExtractor={(item) => item.id.toString()}
+            style={styles.list}
+          />
+        </View>
+      )}
+
+      {/* Seção Leis */}
+      {selectedSection === "leis" && (
+        <View style={styles.sectionContainer}>
+          <View style={styles.addContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Título da lei"
+              value={newLaw}
+              onChangeText={setNewLaw}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Link da lei"
+              value={newLawLink}
+              onChangeText={setNewLawLink}
+            />
+            <TouchableOpacity
+              style={[
+                styles.addButton,
+                editingLawId !== null && styles.editButton,
+              ]}
+              onPress={addLaw}
+            >
+              <Text style={styles.addButtonText}>
+                {editingLawId !== null ? "Editar" : "Adicionar"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={getFilteredLaws()}
+            renderItem={({ item }) => renderItem({ item, type: "law" })}
+            keyExtractor={(item) => item.id.toString()}
+            style={styles.list}
+          />
+        </View>
+      )}
+
+      {/* Seção Intérpretes */}
       {selectedSection === "interprete" && (
-        <View style={styles.wordRequestContainer}>
+        <View style={styles.sectionContainer}>
           <Text style={styles.cardInformation}>
             Aqui você pode adicionar, editar e remover intérpretes do sistema.
             Para acessar, utilize o e-mail geral dos intérpretes. Certifique-se
             de manter as informações sempre atualizadas para um melhor
-            gerenciamento
+            gerenciamento.
           </Text>
+
+          <View style={styles.addContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Nome"
+              value={newInterpreterName}
+              onChangeText={setNewInterpreterName}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              value={newInterpreterContact}
+              onChangeText={setNewInterpreterContact}
+            />
+            <TouchableOpacity style={styles.addButton} onPress={addInterpreter}>
+              <Text style={styles.addButtonText}>
+                {editingInterpreterId !== null ? "Editar" : "Adicionar"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <FlatList
+            data={interpreters}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={renderInterpreterItem}
+            style={styles.list}
+          />
         </View>
       )}
-
-      {selectedSection === "interprete" && renderInterpreteList()}
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -593,15 +670,15 @@ const styles = StyleSheet.create({
   },
   sectionContainer: {
     flex: 1,
-    padding: 16,
-    marginBottom: 50,
+    paddingHorizontal: 16,
   },
   addButton: {
     backgroundColor: "#49DA80",
     padding: 12,
     borderRadius: 8,
     alignItems: "center",
-    width: 100,
+    width: '100%',
+    flexShrink: 0, // botão não encolhe abaixo dos 100px
   },
   editButton: {
     backgroundColor: "#2196F3",
@@ -621,8 +698,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
     borderRadius: 8,
     paddingHorizontal: 12,
-    marginBottom: 16,
-    marginTop: 16,
+    marginTop: 8,
   },
   searchIcon: {
     marginRight: 8,
@@ -637,7 +713,6 @@ const styles = StyleSheet.create({
     borderColor: "#ddd",
     borderRadius: 8,
     margin: 8,
-    marginBottom: 16,
     backgroundColor: "#fff",
   },
   card: {
@@ -666,19 +741,21 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   addContainer: {
-    flexDirection: "row",
+    flexDirection: "column",
     alignItems: "center",
     marginBottom: 16,
+    paddingHorizontal: 8, // evitar inputs encostando nas bordas
   },
   input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    marginRight: 8,
-    fontSize: 16,
-    maxHeight: 50,
-  },
+  width: "100%", // usar a largura total
+  borderWidth: 1,
+  borderColor: "#ddd",
+  borderRadius: 8,
+  paddingHorizontal: 12,
+  paddingVertical: 10,
+  fontSize: 16,
+  backgroundColor: "#fff",
+},
   addForm: {
     marginBottom: 16,
   },
@@ -702,6 +779,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 16,
     borderRadius: 8,
+    marginBottom: 16,
   },
 });
 

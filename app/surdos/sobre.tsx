@@ -7,15 +7,14 @@ import {
   TouchableOpacity,
   Linking,
 } from "react-native";
-import { Video } from "expo-av";
 
 export default function AboutScreen() {
   const handleEmailPress = () => {
-    Linking.openURL("mailto:contato@exemplo.com");
+    Linking.openURL("mailto:librasflow5@gmail.com");
   };
 
   const handleInstagramPress = () => {
-    Linking.openURL("https://www.instagram.com/exemplo");
+    Linking.openURL("");
   };
 
   return (
@@ -39,16 +38,17 @@ export default function AboutScreen() {
           {"\n"}- Leis reunidas e atualizadas.
           {"\n"}- Explore o glossário e expanda seu conhecimento.
           {"\n"}- EM BREVE - Tema Preto e Branco 🚧🚧
+          {"\n"}- EM BREVE - Reportar errors de tradução 🚧🚧
         </Text>
 
         <Text style={styles.subtitle}>Como Funciona?</Text>
         <Text style={styles.subtitle}>Veja o vídeo de tutorial</Text>
         <View style={styles.videoContainer}>
-          <Video
+          {/* <Video
             source={require("../../assets/tutorial/tutorial.mp4")}
             style={styles.video}
             useNativeControls
-          />
+          /> */}
         </View>
 
         <Text style={styles.subtitle}>Intérprete</Text>
@@ -57,7 +57,7 @@ export default function AboutScreen() {
           bilíngue dos sertões de crateús, e a função de "intérprete" será
           limitada a esse grupo. No entanto, se você deseja participar das
           traduções, pode entrar em contato através do e-mail do app solicitando
-          a inclusão. O núcleo fará uma chamada para avaliar suas qualificações
+          a inclusão. O núcleo fará uma avaliação de suas qualificações
           e certificados. Se tudo estiver em ordem, você terá acesso às
           funcionalidades de intérprete.
         </Text>
@@ -120,7 +120,7 @@ export default function AboutScreen() {
 
         <Text style={styles.subtitle}>Licença</Text>
         <Text style={styles.description}>
-          Este aplicativo está sob alicença [NUMERO]. O código fonte, design e
+          Este aplicativo está sob a licença [NUMERO]. O código fonte, design e
           funcionalidades não podem ser reutilizados, modificados ou
           distribuídos sem a permissão explícita dos donos. Qualquer uso não
           autorizado é proibido.
@@ -130,13 +130,13 @@ export default function AboutScreen() {
         <Text style={styles.description}>
           - [App na Play Store] - versão
           {"\n"}- [App na Apple Store] - versão
-          {"\n"}- [APK do aplicativo] - versão
+          {"\n"}- [APK do aplicativo] - 1.1.1
         </Text>
 
         <Text style={styles.subtitle}>Autores</Text>
         <Text style={styles.description}>
-          - NOME
-          {"\n"}- NOME
+          - Victor Jones Mesquita de Sousa
+          {"\n"}- João Mateus Antunes
         </Text>
 
         <View style={styles.infosContainer}>
@@ -159,7 +159,7 @@ export default function AboutScreen() {
           </View>
 
           <Text style={styles.subtitle}>Versão do App</Text>
-          <Text style={styles.description}>Versão 1.0.0</Text>
+          <Text style={styles.description}>Versão 1.1.1</Text>
         </View>
       </View>
     </ScrollView>

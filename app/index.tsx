@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ActivityIndicator, StyleSheet, View, Text } from "react-native";
-import { H1 } from "~/components/ui/typography";
+import { ActivityIndicator, StyleSheet, View, Text, Image } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 
@@ -11,7 +10,7 @@ export default function Screen() {
     const checkOnboardingStatus = async () => {
       try {
         /* TODO lembrar de tirar isso */
-        await AsyncStorage.clear();
+        //await AsyncStorage.clear();
         const hasSeenOnboarding = await AsyncStorage.getItem("hasSeenOnboarding");
 
         if (hasSeenOnboarding === "true") {
@@ -41,7 +40,7 @@ export default function Screen() {
 
   return (
     <View style={styles.container}>
-      <H1 style={styles.logoText}>IMAGEM DA LOGO</H1>
+      <Image source={require('../assets/images/logosemfundo.png')} style={{ width: 400, height: 400}} />
 
       <ActivityIndicator size="large" color="#fff" style={styles.spinner} />
 

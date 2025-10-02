@@ -6,6 +6,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  ToastAndroid,
 } from "react-native";
 import { Card } from "~/components/ui/card";
 import { Checkbox } from "~/components/ui/checkbox";
@@ -13,9 +14,10 @@ import { P } from "~/components/ui/typography";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { z } from "zod";
 import { useNavigation } from "@react-navigation/native";
-
+import axios from "axios";
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneRegex = /^\d{11,}$/;
+import { Url } from "../../Utils/Api";
 
 const schema = z.object({
   name: z.string().min(3, "Seu apelido deve ter pelo menos 3 caracteres"),
@@ -26,10 +28,10 @@ const schema = z.object({
       (value) => emailRegex.test(value) || phoneRegex.test(value),
       "Insira um e-mail ou telefone válido. O telefone deve conter 11 números."
     ),
-  password: z.string().min(6, "A senha deve ter no mínimo 6 caracteres."),
+  password: z.string().min(7, "A senha deve ter no mínimo 7 caracteres."),
   confirmPassword: z
     .string()
-    .min(6, "A senha deve ter no mínimo 6 caracteres."),
+    .min(7, "A senha deve ter no mínimo 7 caracteres."),
   role: z.string(),
 });
 
@@ -60,6 +62,43 @@ export default function RegisterScreen() {
     }));
   };
 
+  type RegisterRequestDTO = {
+    name: String;
+    email: String;
+    password: String;
+    passwordConfirmation: String;
+  };
+
+  const registerRequest = async (data: RegisterRequestDTO) => {
+    try {
+      const result = await axios.post(`${Url}/auth/signup`, data);
+      if (result.status === 201) {
+        //@ts-ignore
+        navigation.navigate("auth/code", { email: data.email });
+        ToastAndroid.show(
+          "Usuário criado com sucesso, acesse o email/sms para pegar o código e fazer a verificação",
+          6000
+        );
+      } else {
+        ToastAndroid.show("Opss..., ocorreu algum erro, tente novamente", 6000);
+      }
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || error.message || "Erro desconhecido";
+
+      if (
+        errorMessage.includes("duplicate key value violates unique constraint")
+      ) {
+        ToastAndroid.show("Este e-mail já está em uso.", ToastAndroid.LONG);
+      } else {
+        ToastAndroid.show(
+          "Erro do servidor ou e-mail já em uso, tente novamente mais tarde.",
+          ToastAndroid.LONG
+        );
+      }
+    }
+  };
+
   const handleRegister = () => {
     try {
       schema.parse(form);
@@ -80,15 +119,12 @@ export default function RegisterScreen() {
         return;
       }
 
-      if (form.role !== "Surdo" && form.role !== "Interprete") {
-        setErrors((prevErrors) => ({
-          ...prevErrors,
-          role: "Selecione uma opção",
-        }));
-        return;
-      }
-
-      console.log("Cadastro realizado com sucesso:", form);
+      registerRequest({
+        name: form.name,
+        email: form.emailOrPhone,
+        password: form.password,
+        passwordConfirmation: form.confirmPassword,
+      });
     } catch (e: any) {
       const validationErrors: any = {};
       e.errors.forEach((error: any) => {
@@ -300,13 +336,11 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   label: { fontSize: 16, fontWeight: "bold", marginBottom: 10 },
+
   input: {
     fontSize: 16,
     color: "#333",
-    backgroundColor: "#F4F4F4",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    height: 50,
+    flex: 1,
   },
   errorText: {
     fontSize: 12,

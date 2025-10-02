@@ -10,9 +10,28 @@ import {
   Alert
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import { Url } from '~/Utils/Api';
+import * as FileSystem from 'expo-file-system';
 
-const ProfileScreen = () => {
+type User = {
+  id: Number,
+  name: String,
+  email: String,
+  phone: String,
+  code: String,
+  verified: boolean,
+  password: String,
+  photo: String,
+  role: String
+}
+
+const ProfileScreen = (userParamns : User) => {
+  const route = useRoute();
+    const user = route.params?.user;
+
   const navigation = useNavigation();
   const [isEnabled, setIsEnabled] = useState(false);
   const [userInfo, setUserInfo] = useState<{
@@ -22,35 +41,70 @@ const ProfileScreen = () => {
     role: string;
     photo: string | null;
   }>({
-    name: 'Victor',
-    email: 'email@exemplo.com',
-    phone: '(00) 00000-0000',
-    role: 'surdo',
-    photo: null
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    role: user.role,
+    photo: user.photo
   });
+
+  console.log("userInfo", userInfo);
 
   const toggleSwitch = () => setIsEnabled(previousState => !previousState);
 
   const handleEditPhoto = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
-    if (permissionResult.granted === false) {
+    if (!permissionResult.granted) {
       Alert.alert('É necessário permissão para acessar a galeria');
       return;
     }
-
+  
     const pickerResult = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 1,
     });
-
+  
     if (!pickerResult.canceled) {
-      setUserInfo(prev => ({...prev, photo: pickerResult.assets[0].uri}));
+      const photoUri = pickerResult.assets[0].uri;
+  
+      const fileName = photoUri.split('/').pop();
+      if (!FileSystem.documentDirectory) {
+        Alert.alert("Erro", "Diretório do sistema de arquivos não disponível.");
+        return;
+      }
+      const newPath = FileSystem.documentDirectory + fileName;
+  
+      try {
+        await FileSystem.copyAsync({
+          from: photoUri,
+          to: newPath,
+        });
+      } catch (error) {
+        console.error("Erro ao copiar arquivo:", error);
+        Alert.alert("Erro", "Não foi possível armazenar a foto localmente.");
+        return;
+      }
+
+      const updatedUser = { ...userInfo, photo: newPath };
+      setUserInfo(updatedUser);
+  
+      try {
+        const token = await AsyncStorage.getItem("Token");
+        await axios.put(`${Url}/users/${user.id}`, updatedUser, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        Alert.alert("Sucesso", "Foto atualizada com sucesso!");
+      } catch (error) {
+        console.error("Erro ao atualizar a foto:", error);
+        Alert.alert("Erro", "Não foi possível atualizar a foto.");
+      }
     }
   };
-
+  
   const handleLogout = () => {
     Alert.alert(
       "Sair da conta",
@@ -62,25 +116,11 @@ const ProfileScreen = () => {
         },
         {
           text: "Sair",
-          onPress: () => console.log("Usuário deslogado")
-        }
-      ]
-    );
-  };
-
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      "Deletar conta",
-      "Tem certeza que deseja deletar sua conta? Esta ação não pode ser desfeita.",
-      [
-        {
-          text: "Cancelar",
-          style: "cancel"
-        },
-        {
-          text: "Deletar",
-          onPress: () => console.log("Conta deletada"),
-          style: "destructive"
+          onPress: async () => {
+            await AsyncStorage.removeItem("Token");
+            //@ts-ignore
+            navigation.navigate("auth/login")
+          }
         }
       ]
     );
@@ -88,7 +128,7 @@ const ProfileScreen = () => {
 
   const handleEditPerfil = () => {
     //@ts-ignore
-    navigation.navigate('surdos/editPerfil', { userInfo })
+    navigation.navigate('surdos/editPerfil', { user: user })
   };
 
   const handleClickSobre = () => {

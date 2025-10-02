@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -6,14 +6,16 @@ import {
   TouchableOpacity,
   FlatList,
   TextInput,
-  ScrollView,
   Alert,
   Linking,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { Picker } from "@react-native-picker/picker";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import { Url } from "~/Utils/Api";
 
 type Word = {
   id: number;
@@ -30,65 +32,88 @@ const InterpreteScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("palavras");
 
-  // Exemplo de palavras com intérpretes já associados
-  const initialWords: Word[] = [
-    { 
-      id: 1, 
-      word: "Palavra 1", 
-      description: "Descrição 1", 
-      video: "", 
-      status: "pending",
-      interpreterId: 1,
-      interpreterName: "João Silva"
-    },
-    { 
-      id: 2, 
-      word: "Palavra 2", 
-      description: "Descrição 2", 
-      video: "", 
-      status: "pending" 
-    },
-    { 
-      id: 3, 
-      word: "Palavra 3", 
-      description: "Descrição 3", 
-      video: "", 
-      status: "pending",
-      interpreterId: 2,
-      interpreterName: "Maria Santos"
-    },
-  ];
+  const [words, setWords] = useState<Word[]>([]);
+  const [laws, setLaws] = useState<
+    { id: number; title: string; resume: string; link: string }[]
+  >([]);
+  const [news, setNews] = useState<
+    { id: number; title: string; resume: string; link: string }[]
+  >([]);
 
-  const laws = [
-    {
-      lei: "Lei nº 10.436 - Língua Brasileira de Sinais",
-      url: "https://www.planalto.gov.br/ccivil_03/leis/2002/l10436.htm",
-    },
-    {
-      lei: "Lei nº 12.319 - Regulamentação da profissão de Tradutor e Intérprete",
-      url: "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2010/lei/l12319.htm",
-    },
-  ];
+  useFocusEffect(
+    useCallback(() => {
+      const fetchData = async () => {
+        try {
+          const token = await AsyncStorage.getItem("Token");
+          const [lawsRes, newsRes, wordsRes] = await Promise.all([
+            axios.get(`${Url}/laws`, {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            axios.get(`${Url}/news`, {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            axios.get(`${Url}/words/requests`, {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+          ]);
 
-  const news = [
-    { lei: "UFPR abre vagas para curso de Libras", url: "https://www.ufpr.br/curso-libras" },
-    { lei: "Novo aplicativo de tradução para Libras", url: "https://www.tecnologiaemlibras.com.br" },
-  ];
+          setLaws(lawsRes.data);
+          setNews(newsRes.data);
+          setWords(wordsRes.data.filter((word: Word) => word.status === "PENDING"));
+        } catch (error) {
+          console.error("Erro ao carregar dados:", error);
+        }
+      };
+
+      fetchData();
+    }, [])
+  );
+
+  const handleUpdateWordStatus = async (
+    wordId: number,
+    status: "APPROVED" | "REJECTED"
+  ) => {
+    try {
+      const token = await AsyncStorage.getItem("Token");
+
+      await axios.put(
+        `${Url}/words/${wordId}/status`,
+        { status },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      Alert.alert(
+        "Sucesso",
+        `Palavra ${status === "APPROVED" ? "aprovada" : "rejeitada"}!`
+      );
+
+      // Remove a palavra da lista
+      setWords((prev) => prev.filter((w) => w.id !== wordId));
+    } catch (error) {
+      console.error("Erro ao atualizar palavra:", error);
+      Alert.alert("Erro", "Não foi possível atualizar o status.");
+    }
+  };
 
   const getFilteredItems = () => {
     if (selectedCategory === "palavras") {
-      return initialWords.filter((word) =>
+      return words.filter((word) =>
         word.word.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
     if (selectedCategory === "leis") {
       return laws.filter((law) =>
-        law.lei.toLowerCase().includes(searchQuery.toLowerCase())
+        law.title.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
     if (selectedCategory === "noticias") {
       return news.filter((newsItem) =>
-        newsItem.lei.toLowerCase().includes(searchQuery.toLowerCase())
+        newsItem.title.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
     return [];
@@ -109,7 +134,9 @@ const InterpreteScreen = () => {
           style={styles.wordItem}
           onPress={() =>
             //@ts-ignore
-            navigation.navigate("interpretes/interpreteDetalhePalavra", { word: item })
+            navigation.navigate("interpretes/interpreteDetalhePalavra", {
+              word: item,
+            })
           }
         >
           <View style={styles.wordContent}>
@@ -121,10 +148,10 @@ const InterpreteScreen = () => {
             )}
           </View>
           <View style={styles.actionButtons}>
-            <TouchableOpacity style={styles.iconButton}>
-              <Icon name="check-circle" size={24} color="#8CAF50" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton}>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => handleUpdateWordStatus(item.id, "REJECTED")}
+            >
               <Icon name="cancel" size={24} color="#F44336" />
             </TouchableOpacity>
           </View>
@@ -135,10 +162,10 @@ const InterpreteScreen = () => {
     return (
       <TouchableOpacity
         style={styles.sectionItem}
-        onPress={() => handleOpenLink(item.url)}
+        onPress={() => handleOpenLink(item.link)}
       >
-        <Text style={styles.sectionText}>{item.lei}</Text>
-        <Text style={styles.urlText}>{item.url}</Text>
+        <Text style={styles.sectionText}>{item.title}</Text>
+        <Text style={styles.urlText}>{item.link}</Text>
       </TouchableOpacity>
     );
   };
@@ -176,7 +203,9 @@ const InterpreteScreen = () => {
         data={getFilteredItems()}
         renderItem={renderItem}
         keyExtractor={(item, index) =>
-          selectedCategory === "palavras" ? item.id.toString() : index.toString()
+          selectedCategory === "palavras"
+            ? item.id.toString()
+            : index.toString()
         }
         style={styles.list}
       />
@@ -189,24 +218,32 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
   },
-  header: {
-    padding: 8,
-  },
   pickerContainer: {
     borderWidth: 1,
     borderColor: "#ddd",
     borderRadius: 8,
-    margin: 8,
-    marginTop: 16,
-    marginBottom: 16,
+    margin: 16,
     backgroundColor: "#fff",
-    marginHorizontal: 16,
   },
   picker: {
     height: 50,
   },
-  list: {
-    flex: 1
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    marginHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  searchIcon: {
+    marginRight: 8,
+    marginLeft: 8,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 16,
   },
   wordItem: {
     flexDirection: "row",
@@ -223,8 +260,8 @@ const styles = StyleSheet.create({
   },
   wordText: {
     fontSize: 16,
-    color: "#000",
     fontWeight: "bold",
+    color: "#000",
   },
   interpreterText: {
     fontSize: 14,
@@ -239,45 +276,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 50,
   },
-  wordDetails: {
-    padding: 16,
-    backgroundColor: "#fff",
-  },
-  wordTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    padding: 16,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    fontSize: 16,
-  },
-  videoPreview: {
-    height: 200,
-    backgroundColor: "#f5f5f5",
-    borderRadius: 8,
-    marginBottom: 16,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  previewText: {
-    color: "#666",
-    fontSize: 16,
-  },
-  descriptionContainer: {
-    backgroundColor: "#f5f5f5",
-    borderRadius: 8,
-    padding: 16,
-    minHeight: 100,
-  },
-  description: {
-    fontSize: 16,
-    color: "#333",
-  },
   sectionItem: {
     backgroundColor: "#00b4d8",
     padding: 16,
@@ -290,43 +288,13 @@ const styles = StyleSheet.create({
     color: "#333",
     fontWeight: "bold",
   },
-  card: {
-    flex: 1,
-    margin: 8,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    aspectRatio: 1,
-  },
-  icon: {
-    fontSize: 32,
-  },
-  cardText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginTop: 8,
-    textAlign: "center",
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 12,
-    fontSize: 16,
-  },
-  searchIcon: {
-    marginRight: 8,
-    marginLeft: 8,
-  },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f5f5f5",
-    marginHorizontal: 16,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
   urlText: {
     marginTop: 8,
-  }
+    color: "#333",
+  },
+  list: {
+    flex: 1,
+  },
 });
 
 export default InterpreteScreen;

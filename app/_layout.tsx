@@ -68,6 +68,8 @@ export default function RootLayout() {
     return null;
   }
 
+  const email = ""; // Define the email variable
+
   return (
       <ThemeProvider value={isDarkColorScheme ? DARK_THEME : LIGHT_THEME}>
         <StatusBar
@@ -85,6 +87,11 @@ export default function RootLayout() {
         /> */}
 
           <Stack.Screen name="index" options={{ headerShown: false }} />
+
+          <Stack.Screen
+            name="auth/code"
+            options={{ headerTitle: "Voltar" }}
+          />
 
           <Stack.Screen
             name="onboarding/screen1"
@@ -139,23 +146,23 @@ export default function RootLayout() {
           />
 
           <Stack.Screen name="interpretes/modulos" options={{ headerShown: false }}/>
-          <Stack.Screen name="interpretes/dicionario" options={{ headerShown: false }}/>
+          {/* <Stack.Screen name="interpretes/dicionario" options={{ headerShown: false }}/> */}
           <Stack.Screen name="interpretes/interprete" />
-          <Stack.Screen name="interpretes/perfil" />
+          {/* <Stack.Screen name="interpretes/perfil" /> */}
 
           <Stack.Screen name="interpretes/interpreteDetalhePalavra" options={{ headerTitle: "Voltar" }}/>
 
           <Stack.Screen name="admin/modulos" options={{ headerShown: false }}/>
-          <Stack.Screen name="admin/dicionario" options={{ headerShown: false }}/>
+          {/* <Stack.Screen name="admin/dicionario" options={{ headerShown: false }}/> */}
           <Stack.Screen name="admin/admin" />
-          <Stack.Screen name="admin/perfil" options={{ headerTitle: "Voltar" }}/>
+          {/* <Stack.Screen name="admin/perfil" options={{ headerTitle: "Voltar" }}/> */}
 
-          <Stack.Screen name="admin/moduloDetalhes" options={{ headerTitle: "Voltar" }}/>
-          <Stack.Screen name="admin/editPerfil" />
+          <Stack.Screen name="admin/adminDetalhePalavra" options={{ headerTitle: "Voltar" }}/>
+          {/* <Stack.Screen name="admin/editPerfil" />
           <Stack.Screen name="admin/moduloPalavraDetalhes" options={{ headerTitle: "Voltar" }}/>
           <Stack.Screen name="admin/moduloPalavraRecentes" options={{ headerTitle: "Voltar" }}/>
           <Stack.Screen name="admin/moduloPalavraCurtidas" options={{ headerTitle: "Voltar" }}/>
-          <Stack.Screen name="admin/adminDetalhePalavra" options={{ headerTitle: "Voltar" }}/>
+          <Stack.Screen name="admin/adminDetalhePalavra" options={{ headerTitle: "Voltar" }}/> */}
           
         </Stack>
         <PortalHost />

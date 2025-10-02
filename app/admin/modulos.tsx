@@ -2,16 +2,22 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import AdminScreen from "./admin";
-import DicionarioScreen from "./dicionario";
-import PerfilScreen from "./perfil";
-import ModulosScreen from "./modulosScreen";
+import DicionarioScreen from "../surdos/dicionario";
+import PerfilScreen from "../surdos/perfil";
+import ModulosScreen from "../surdos/modulosScreen";
 import {
   StyleSheet,
 } from "react-native";
+import { useRoute } from '@react-navigation/native';
+import { useBlockBackButton } from '~/Utils/hooks/useBlockBackButton';
 
 const Tab = createBottomTabNavigator();
 
 export default function SurdosScreen() {
+  const route = useRoute();
+  const user = route.params?.user;
+  useBlockBackButton();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -37,10 +43,10 @@ export default function SurdosScreen() {
         headerTitleAlign: "center",
       })}
     >
-      <Tab.Screen name="Módulos" component={ModulosScreen} />
-      <Tab.Screen name="Dicionário" component={DicionarioScreen} />
-      <Tab.Screen name="Admin" component={AdminScreen} />
-      <Tab.Screen name="Perfil" component={PerfilScreen} />
+      <Tab.Screen name="Módulos" component={ModulosScreen} initialParams={{ user }}/>
+      <Tab.Screen name="Dicionário" component={DicionarioScreen} initialParams={{ user }}/>
+      <Tab.Screen name="Admin" component={AdminScreen} initialParams={{ user }}/>
+      <Tab.Screen name="Perfil" component={PerfilScreen} initialParams={{ user }}/>
     </Tab.Navigator>
   );
 }

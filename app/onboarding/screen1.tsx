@@ -28,9 +28,7 @@ export default function OnboardingScreen({ screenNumber = 1 }: any) {
       <View style={styles.infos}>
         <H2 style={{ color: "#fff" }}>Bem-vindo ao nosso app! 🎉</H2>
         <P style={styles.infoText}>
-          Deslize para aprender mais. lorem ipsumlorem ipsumlorem ipsumlorem
-          ipsumlorem ipsum lorem ipsumlorem ipsumlorem ipsumlorem ipsumlorem
-          ipsum lorem ipsumlorem ipsumlorem ipsumlorem ipsumlorem ipsum
+          Este aplicativo é um glossário de Libras (Língua Brasileira de Sinais) com foco em acessibilidade e aprendizado. Todas as traduções disponíveis foram feitas por pessoas fluentes na Libras, garantindo qualidade e precisão na comunicação.
         </P>
 
         <ProgressIndicator currentScreen={screenNumber} totalScreens={totalScreens} />

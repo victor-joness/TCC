@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,256 +6,29 @@ import {
   StyleSheet,
   FlatList,
   TextInput,
+  ActivityIndicator,
+  ToastAndroid,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-
-const mockModules = [
-  {
-    id: 1,
-    words: [
-      {
-        id: 1,
-        word: "Palavra 1.1",
-        description:
-          "Lorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsum Lorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsumLorem ipsum",
-        video:
-          "vJW2u13VXQk",
-        status: "Aprovado",
-        modulo: "Básico",
-        categoria: "Saudações",
-        variacao: true,
-      },
-      {
-        id: 2,
-        word: "Palavra 1.2",
-        description: "Descrição para a palavra 1.2",
-        video: "https://example.com/video1-2",
-      },
-      {
-        id: 3,
-        word: "Palavra 1.3",
-        description: "Descrição para a palavra 1.3",
-        video: "https://example.com/video1-3",
-      },
-      {
-        id: 4,
-        word: "Palavra 1.4",
-        description: "Descrição para a palavra 1.4",
-        video: "https://example.com/video1-4",
-      },
-    ],
-  },
-  {
-    id: 2,
-    words: [
-      {
-        id: 1,
-        word: "Palavra 2.1",
-        description: "Descrição para a palavra 2.1",
-        video: "https://example.com/video2-1",
-      },
-      {
-        id: 2,
-        word: "Palavra 2.2",
-        description: "Descrição para a palavra 2.2",
-        video: "https://example.com/video2-2",
-      },
-      {
-        id: 3,
-        word: "Palavra 2.3",
-        description: "Descrição para a palavra 2.3",
-        video: "https://example.com/video2-3",
-      },
-      {
-        id: 4,
-        word: "Palavra 2.4",
-        description: "Descrição para a palavra 2.4",
-        video: "https://example.com/video2-4",
-      },
-    ],
-  },
-  {
-    id: 3,
-    words: [
-      {
-        id: 1,
-        word: "Palavra 3.1",
-        description: "Descrição para a palavra 3.1",
-        video: "https://example.com/video3-1",
-      },
-      {
-        id: 2,
-        word: "Palavra 3.2",
-        description: "Descrição para a palavra 3.2",
-        video: "https://example.com/video3-2",
-      },
-      {
-        id: 3,
-        word: "Palavra 3.3",
-        description: "Descrição para a palavra 3.3",
-        video: "https://example.com/video3-3",
-      },
-      {
-        id: 4,
-        word: "Palavra 3.4",
-        description: "Descrição para a palavra 3.4",
-        video: "https://example.com/video3-4",
-      },
-    ],
-  },
-  {
-    id: 4,
-    words: [
-      {
-        id: 1,
-        word: "Palavra 4.1",
-        description: "Descrição 4.1",
-        video: "https://example.com/video4-1",
-      },
-      {
-        id: 2,
-        word: "Palavra 4.2",
-        description: "Descrição 4.2",
-        video: "https://example.com/video4-2",
-      },
-      {
-        id: 3,
-        word: "Palavra 4.3",
-        description: "Descrição 4.3",
-        video: "https://example.com/video4-3",
-      },
-      {
-        id: 4,
-        word: "Palavra 4.4",
-        description: "Descrição 4.4",
-        video: "https://example.com/video4-4",
-      },
-    ],
-  },
-  {
-    id: 5,
-    words: [
-      {
-        id: 1,
-        word: "Palavra 5.1",
-        description: "Descrição 5.1",
-        video: "https://example.com/video5-1",
-      },
-      {
-        id: 2,
-        word: "Palavra 5.2",
-        description: "Descrição 5.2",
-        video: "https://example.com/video5-2",
-      },
-      {
-        id: 3,
-        word: "Palavra 5.3",
-        description: "Descrição 5.3",
-        video: "https://example.com/video5-3",
-      },
-      {
-        id: 4,
-        word: "Palavra 5.4",
-        description: "Descrição 5.4",
-        video: "https://example.com/video5-4",
-      },
-    ],
-  },
-  {
-    id: 6,
-    words: [
-      {
-        id: 1,
-        word: "Palavra 6.1",
-        description: "Descrição 6.1",
-        video: "https://example.com/video6-1",
-      },
-      {
-        id: 2,
-        word: "Palavra 6.2",
-        description: "Descrição 6.2",
-        video: "https://example.com/video6-2",
-      },
-      {
-        id: 3,
-        word: "Palavra 6.3",
-        description: "Descrição 6.3",
-        video: "https://example.com/video6-3",
-      },
-      {
-        id: 4,
-        word: "Palavra 6.4",
-        description: "Descrição 6.4",
-        video: "https://example.com/video6-4",
-      },
-    ],
-  },
-  {
-    id: 7,
-    words: [
-      {
-        id: 1,
-        word: "Palavra 7.1",
-        description: "Descrição 7.1",
-        video: "https://example.com/video7-1",
-      },
-      {
-        id: 2,
-        word: "Palavra 7.2",
-        description: "Descrição 7.2",
-        video: "https://example.com/video7-2",
-      },
-      {
-        id: 3,
-        word: "Palavra 7.3",
-        description: "Descrição 7.3",
-        video: "https://example.com/video7-3",
-      },
-      {
-        id: 4,
-        word: "Palavra 7.4",
-        description: "Descrição 7.4",
-        video: "https://example.com/video7-4",
-      },
-    ],
-  },
-  {
-    id: 8,
-    words: [
-      {
-        id: 1,
-        word: "Palavra 8.1",
-        description: "Descrição 8.1",
-        video: "https://example.com/video8-1",
-      },
-      {
-        id: 2,
-        word: "Palavra 8.2",
-        description: "Descrição 8.2",
-        video: "https://example.com/video8-2",
-      },
-      {
-        id: 3,
-        word: "Palavra 8.3",
-        description: "Descrição 8.3",
-        video: "https://example.com/video8-3",
-      },
-      {
-        id: 4,
-        word: "Palavra 8.4",
-        description: "Descrição 8.4",
-        video: "https://example.com/video8-4",
-      },
-    ],
-  },
-];
+import axios from "axios";
+import { Url } from "~/Utils/Api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Word = {
   id: number;
   word: string;
   description: string;
   video: string;
+  status: string;
+  modulo: string;
+  category: {
+    id: number;
+    name: string;
+    tpe: string;
+  };
+  variacao: boolean;
+  favorited: boolean;
 };
 
 export default function ModulosDetalhesScreen() {
@@ -266,35 +39,156 @@ export default function ModulosDetalhesScreen() {
     id: string;
     name: string;
     icon: string;
+    userId: Number;
   };
 
-  const moduleId = parseInt(routeParams.id);
-  const module = mockModules.find((mod) => mod.id === moduleId);
-  const [savedWords, setSavedWords] = useState<{ [key: string]: boolean }>({});
+  const [wordsByModule, setWordsByModule] = useState<Word[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [savedWords, setSavedWords] = useState<{ [key: number]: boolean }>({});
   const [searchQuery, setSearchQuery] = useState("");
+  const moduleId = parseInt(routeParams.id);
+  const userId = routeParams.userId;
 
-  const toggleSaveWord = (wordId: number) => {
-    setSavedWords((prevState) => ({
-      ...prevState,
-      [wordId]: !prevState[wordId],
-    }));
+  const requestWordsModule = async (moduleId: number, userId: Number) => {
+    try {
+      const token = await AsyncStorage.getItem("Token");
+
+      const response = await axios.get(`${Url}/words/category/${moduleId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { userId },
+      });
+
+      const words = response.data;
+
+      // Atualiza savedWords com base no campo favorited
+      const savedMap: Record<number, boolean> = {};
+      words.forEach((word: any) => {
+        if (word.favorited) {
+          savedMap[word.id] = true;
+        }
+      });
+
+      setSavedWords(savedMap);
+      return words;
+    } catch (error) {
+      console.error("Erro ao buscar palavras:", error);
+      throw error;
+    }
+  };
+
+  useEffect(() => {
+    const fetchWords = async () => {
+      try {
+        setLoading(true);
+        setError(false);
+
+        const words = await requestWordsModule(moduleId, userId);
+
+        if (!words || words.length === 0) {
+          setWordsByModule([]);
+        } else {
+          setWordsByModule(words);
+        }
+      } catch (err) {
+        console.error("Erro ao buscar palavras:", err);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWords();
+  }, [moduleId]);
+
+  const toggleSaveWord = async (wordId: number) => {
+    const isAlreadySaved = savedWords[wordId];
+    const token = await AsyncStorage.getItem("Token");
+    const updatedSavedWords = {
+      ...savedWords,
+      [wordId]: !isAlreadySaved,
+    };
+
+    setSavedWords(updatedSavedWords);
+    try {
+      await axios.post(
+        `${Url}/liked-words`,
+        {
+          userId: userId,
+          wordId: wordId,
+          status: isAlreadySaved ? "REMOVED" : "SAVED",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      ToastAndroid.show(
+        isAlreadySaved
+          ? "Palavra removida com sucesso!"
+          : "Palavra marcada com sucesso!",
+        ToastAndroid.SHORT
+      );
+    } catch (error) {
+      console.error("Erro ao salvar palavra:", error);
+      setSavedWords((prevState) => ({
+        ...prevState,
+        [wordId]: isAlreadySaved,
+      }));
+    }
   };
 
   const handleSearchChange = (text: string) => {
     setSearchQuery(text);
   };
 
-  const filteredWords = module?.words.filter(({ word }) =>
+  const filteredWords = wordsByModule.filter(({ word }) =>
     word.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleWordPress = (word: Word) => {
-    
     //@ts-ignore
-    navigation.navigate("surdos/moduloPalavraDetalhes", { word });
+    navigation.navigate("surdos/moduloPalavraDetalhes", { word, userId});
   };
 
-  if (!module) return <Text>Módulo não encontrado!</Text>;
+  if (loading) {
+    return (
+      <View style={{ alignItems: "center", justifyContent: "center", flex: 1 }}>
+        <ActivityIndicator size="large" color="#007bff" />
+        <Text style={{ marginTop: 10 }}>🔄 Carregando conteúdo...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={{ alignItems: "center", justifyContent: "center", flex: 1 }}>
+        <Text style={{ fontSize: 24 }}>❌</Text>
+        <Text style={{ color: "#d9534f", fontWeight: "bold", marginTop: 5 }}>
+          Ocorreu um erro ao carregar as palavras.
+        </Text>
+        <Text style={{ textAlign: "center", marginTop: 5 }}>
+          Verifique sua conexão ou tente novamente.
+        </Text>
+      </View>
+    );
+  }
+
+  if (!module) {
+    return (
+      <View style={{ alignItems: "center", justifyContent: "center", flex: 1 }}>
+        <Text style={{ fontSize: 24 }}>📦</Text>
+        <Text style={{ fontWeight: "bold", marginTop: 5 }}>
+          Módulo não encontrado!
+        </Text>
+        <Text style={{ textAlign: "center", marginTop: 5 }}>
+          O conteúdo pode ter sido removido ou está indisponível.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -336,9 +230,23 @@ export default function ModulosDetalhesScreen() {
             </TouchableOpacity>
           </TouchableOpacity>
         )}
+        ListEmptyComponent={
+          <View
+            style={{
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 20,
+            }}
+          >
+            <Text style={{ fontSize: 18, color: "#888" }}>
+              🔍 Nenhuma palavra encontrada
+            </Text>
+            <Text style={{ textAlign: "center", marginTop: 4 }}>
+              Tente ajustar o filtro ou verificar outro módulo.
+            </Text>
+          </View>
+        }
       />
-
-      {/* <Navbar /> */}
     </View>
   );
 }
@@ -398,5 +306,5 @@ const styles = StyleSheet.create({
   tabBarItemStyle: {
     marginHorizontal: 10,
     marginTop: 7,
-  }
+  },
 });

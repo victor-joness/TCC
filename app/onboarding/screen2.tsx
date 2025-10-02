@@ -26,11 +26,9 @@ export default function OnboardingScreen({ screenNumber = 2 }: any) {
       </View>
 
       <View style={styles.infos}>
-        <H2 style={{ color: "#fff" }}>lorem ipsum lorem ipsum! 🎉</H2>
+        <H2 style={{ color: "#fff" }}>Feito para todos!</H2>
         <P style={styles.infoText}>
-          Deslize para aprender mais. lorem ipsumlorem ipsumlorem ipsumlorem
-          ipsumlorem ipsum lorem ipsumlorem ipsumlorem ipsumlorem ipsumlorem
-          ipsum lorem ipsumlorem ipsumlorem ipsumlorem ipsumlorem ipsum
+          Além disso, o glossário é colaborativo: usuários podem interagir, sugerir variações e contribuir para a construção de um acervo cada vez mais completo e representativo da comunidade surda.
         </P>
 
         <ProgressIndicator currentScreen={screenNumber} totalScreens={totalScreens} />

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -9,62 +9,119 @@ import {
   SafeAreaView,
   Alert,
   Linking,
+  ActivityIndicator,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { Ionicons } from "@expo/vector-icons";
+import { useRoute } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import { Url } from "~/Utils/Api";
+import { useFocusEffect } from "expo-router";
+import modulosData from "../../Utils/Modulos";
+import WordRequestModal from "./WordRequestModal";
 
-const ForumInterface = () => {
+type User = {
+  id: Number;
+  name: String;
+  email: String;
+  phone: String;
+  code: String;
+  verified: boolean;
+  password: String;
+  photo: String;
+  role: String;
+};
+
+const ForumInterface = (userParamns: User) => {
+  const route = useRoute();
+  const user = route.params?.user;
+
   const [selectedSection, setSelectedSection] = useState("leis");
   const [searchTerm, setSearchTerm] = useState("");
   const [wordToRequest, setWordToRequest] = useState("");
   const [urlToRequest, setUrlToRequest] = useState("");
 
-  const [requestedWords, setRequestedWords] = useState([
-    { palavra: "Olá", url: "" },
-    { palavra: "Bom dia", url: "" },
-    { palavra: "Boa tarde", url: "" },
-    { palavra: "Boa noite", url: "" },
-    { palavra: "Olá", url: "" },
-    { palavra: "Bom dia", url: "" },
-    { palavra: "Boa tarde", url: "" },
-    { palavra: "Boa noite", url: "" },
-  ]);
+  const allCategories = [...modulosData.UsoDiario, ...modulosData.UsoTecnico];
 
-  const [laws, setLaws] = useState([
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [requestedWords, setRequestedWords] = useState<
     {
-      palavra: "Lei nº 10.436 - Língua Brasileira de Sinais",
-      url: "https://www.planalto.gov.br/ccivil_03/leis/2002/l10436.htm",
-    },
-    {
-      palavra:
-        "Lei nº 12.319 - Regulamentação da profissão de Tradutor e Intérprete",
-      url: "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2010/lei/l12319.htm",
-    },
-    {
-      palavra: "Lei nº 13.146 - Lei Brasileira de Inclusão",
-      url: "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2015/lei/l13146.htm",
-    },
-  ]);
+      id: number;
+      title: string;
+      resume: string;
+      link: string;
+      status: string;
+    }[]
+  >([]);
+  const [Loading, setLoading] = useState(false);
+  const [Error, setError] = useState(false);
+  const [Laws, setLaws] = useState([]);
+  const [News, setNews] = useState([]);
+  const [modalVisible, setModalVisible] = useState(false);
 
-  const [news, setNews] = useState([
-    {
-      palavra: "UFPR abre vagas para curso de Libras",
-      url: "https://www.ufpr.br/curso-libras",
-    },
-    {
-      palavra: "Novo aplicativo de tradução para Libras",
-      url: "https://www.tecnologiaemlibras.com.br",
-    },
-    {
-      palavra: "Evento de inclusão será realizado na cidade",
-      url: "https://www.eventos-inclusao.com.br",
-    },
-  ]);
+  useFocusEffect(
+    useCallback(() => {
+      const fetchData = async () => {
+        try {
+          setLoading(true);
+          setError(false);
+          const token = await AsyncStorage.getItem("Token");
 
-  const handleWordRequest = () => {
+          const [lawsResponse, newsResponse] = await Promise.all([
+            axios.get(`${Url}/laws`, {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            axios.get(`${Url}/news`, {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+          ]);
+
+          setLaws(lawsResponse.data);
+          setNews(newsResponse.data);
+        } catch (err) {
+          console.error("Erro ao buscar dados:", err);
+          setError(true);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchData();
+    }, [])
+  );
+
+  useEffect(() => {
+    const fetchRequestedWords = async () => {
+      try {
+        const token = await AsyncStorage.getItem("Token");
+        const response = await axios.get(`${Url}/words/requests`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const mappedData = response.data.map((item: any) => ({
+          id: item.id,
+          title: item.word,
+          link: item.videoUrl,
+          status: item.status,
+        }));
+
+        setRequestedWords(mappedData);
+      } catch (error) {
+        console.error("Erro ao buscar palavras solicitadas:", error);
+      }
+    };
+
+    fetchRequestedWords();
+  }, []);
+
+  const handleWordRequest = async () => {
     const normalizedWord = wordToRequest.trim().toLowerCase();
+
     const wordExists = requestedWords.some(
-      (word) => word.palavra.toLowerCase() === normalizedWord
+      (word) => word.title.toLowerCase() === normalizedWord
     );
 
     if (wordExists) {
@@ -75,7 +132,7 @@ const ForumInterface = () => {
     const normalizedUrl = urlToRequest.trim().toLowerCase();
 
     const urlExists = requestedWords.some(
-      (word) => word.url.toLowerCase() === normalizedUrl
+      (word) => word.link.toLowerCase() === normalizedUrl
     );
 
     if (normalizedUrl && urlExists) {
@@ -84,64 +141,165 @@ const ForumInterface = () => {
     }
 
     if (normalizedWord) {
-      setRequestedWords([
-        ...requestedWords,
-        { palavra: wordToRequest, url: normalizedUrl },
-      ]);
-      setWordToRequest("");
-      setUrlToRequest("");
-      Alert.alert("Sucesso", "Palavra solicitada com sucesso!");
+      try {
+        const token = await AsyncStorage.getItem("Token");
+        const response = await axios.post(
+          `${Url}/words/request`,
+          {
+            word: wordToRequest.trim(),
+            video_url: urlToRequest.trim(),
+            category: selectedCategory,
+            request_user_id: user.id,
+            status: "PENDING",
+            interpreter_id: 0
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (response.status === 200 || response.status === 201) {
+          setRequestedWords((prev) => [
+            ...prev,
+            {
+              id: requestedWords.length + 1,
+              title: wordToRequest,
+              resume: "",
+              link: urlToRequest,
+              status: "PENDING",
+            },
+          ]);
+          setWordToRequest("");
+          setUrlToRequest("");
+          Alert.alert("Sucesso", "Palavra solicitada com sucesso!");
+        } else {
+          Alert.alert("Erro", "Não foi possível solicitar a palavra.");
+        }
+      } catch (error) {
+        console.error("Erro ao solicitar palavra:", error);
+        Alert.alert("Erro", "Ocorreu um erro ao enviar a solicitação.");
+      }
     }
   };
-
-  const filterItems = (items: any) =>
-    items.filter((item: any) =>
-      item.palavra.toLowerCase().includes(searchTerm.toLowerCase())
-    );
 
   const renderItem = ({
     item,
   }: {
-    item: { palavra?: string; url?: string; noticia?: string };
-  }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => {
-        if (item.url) {
-          Alert.alert(
-            "Abrir Link",
-            `Deseja abrir o link relacionado a esta ${
-              item.palavra ? "palavra" : "notícia"
-            }?`,
-            [
-              { text: "Cancelar", style: "cancel" },
-              { text: "Abrir", onPress: () => Linking.openURL(item.url!) },
-            ]
-          );
-        } else {
-          Alert.alert("Sem URL", "Este item não possui um link associado.");
-        }
-      }}
-    >
-      <Text style={styles.cardText}>
-        {item.palavra || item.noticia || (typeof item === "string" ? item : "")}
-      </Text>
+    item: {
+      id: number;
+      title: string;
+      resume: string;
+      link: string;
+      status: string;
+    };
+  }) => {
+    const getStatusColor = (status: string) => {
+      switch (status) {
+        case "PENDING":
+          return "#ffd900";
+        case "REJECTED":
+          return "#ff0000";
+        case "TRANSLATED":
+          return "#00ff00";
+        default:
+          return "gray";
+      }
+    };
 
-      {item.url != "" ? <Text style={styles.urlText}>{item.url}</Text> : null}
-    </TouchableOpacity>
-  );  
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => {
+          if (item.link) {
+            Alert.alert(
+              "Abrir Link",
+              `Deseja abrir o link relacionado a esta ${
+                item.title ? "palavra" : "notícia"
+              }?`,
+              [
+                { text: "Cancelar", style: "cancel" },
+                { text: "Abrir", onPress: () => Linking.openURL(item.link!) },
+              ]
+            );
+          } else {
+            Alert.alert("Sem URL", "Este item não possui um link associado.");
+          }
+        }}
+      >
+        <View style={styles.cardContent}>
+          <View style={styles.leftContent}>
+            <Text style={styles.cardText}>
+              {item.title || (typeof item === "string" ? item : "")}
+            </Text>
+            {item.link !== "" && (
+              <Text style={styles.urlText}>{item.link}</Text>
+            )}
+          </View>
+          {item.status !== undefined && item.status !== "" && (
+            <View style={styles.rightContent}>
+              <View
+                style={[
+                  styles.statusDot,
+                  { backgroundColor: getStatusColor(item.status) },
+                ]}
+              />
+              <Text style={styles.statusText}>
+                {item.status === "PENDING"
+                  ? "Pendente"
+                  : item.status === "TRANSLATED"
+                  ? "Em Tradução"
+                  : "Rejeitado"}
+              </Text>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  const filterItems = (
+    items: {
+      id: number;
+      title: string;
+      resume: string;
+      link: string;
+      status?: string;
+    }[]
+  ): typeof items =>
+    items.filter((item) =>
+      item.title.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
   const renderContent = () => {
-    let data = [];
+    // Ensure all items have a status property (default to empty string if missing)
+    let data: {
+      id: number;
+      title: string;
+      resume: string;
+      link: string;
+      status: string;
+    }[] = [];
     switch (selectedSection) {
       case "leis":
-        data = filterItems(laws);
+        data = filterItems(Laws).map((item) => ({
+          ...item,
+          status: "",
+        }));
         break;
       case "noticias":
-        data = filterItems(news);
+        data = filterItems(News).map((item) => ({
+          ...item,
+          status: "",
+        }));
         break;
       case "palavras":
-        data = filterItems(requestedWords);
+        data = filterItems(requestedWords).map((item) => ({
+          ...item,
+          status: item.status ?? "",
+        }));
         break;
     }
 
@@ -155,6 +313,29 @@ const ForumInterface = () => {
       />
     );
   };
+
+  if (Loading) {
+    return (
+      <View style={{ alignItems: "center", justifyContent: "center", flex: 1 }}>
+        <ActivityIndicator size="large" color="#007bff" />
+        <Text style={{ marginTop: 10 }}>🔄 Carregando conteúdo...</Text>
+      </View>
+    );
+  }
+
+  if (Error) {
+    return (
+      <View style={{ alignItems: "center", justifyContent: "center", flex: 1 }}>
+        <Text style={{ fontSize: 24 }}>❌</Text>
+        <Text style={{ color: "#d9534f", fontWeight: "bold", marginTop: 5 }}>
+          Ocorreu um erro ao carregar as palavras.
+        </Text>
+        <Text style={{ textAlign: "center", marginTop: 5 }}>
+          Verifique sua conexão ou tente novamente.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -170,7 +351,7 @@ const ForumInterface = () => {
         </Picker>
       </View>
 
-      {selectedSection === "palavras" && (
+      {/* {selectedSection === "palavras" && (
         <View style={styles.wordRequestContainer}>
           <Text style={styles.cardInformation}>
             Para solicitar uma nova palavra, você pode enviar apenas o nome da
@@ -178,7 +359,7 @@ const ForumInterface = () => {
             arquivo no Google Drive). Isso nos ajudará a compreender melhor o
             contexto e fornecer uma tradução mais precisa.
           </Text>
-          <View style={{ flexDirection: "column", height: 150, gap: 8 }}>
+          <View style={{ flexDirection: "column", height: 220, gap: 8 }}>
             <TextInput
               style={styles.wordInput}
               placeholder="Digite uma nova palavra"
@@ -191,6 +372,23 @@ const ForumInterface = () => {
               value={urlToRequest}
               onChangeText={setUrlToRequest}
             />
+            <View style={styles.pickerContainerStyle}>
+              <Picker
+                selectedValue={selectedCategory}
+                onValueChange={(itemValue) => setSelectedCategory(itemValue)}
+                style={styles.pickerStyle}
+              >
+                <Picker.Item label="Selecione a categoria" value="" />
+                {allCategories.map((cat) => (
+                  <Picker.Item
+                    key={cat.id}
+                    label={`${cat.icon} ${cat.name}`}
+                    value={cat.name.toString()}
+                  />
+                ))}
+              </Picker>
+            </View>
+
             <TouchableOpacity
               style={styles.requestButton}
               onPress={handleWordRequest}
@@ -213,16 +411,64 @@ const ForumInterface = () => {
           style={styles.searchIcon}
         />
         <TextInput
+          style={styles.searchInput}
           placeholder="Pesquisar"
           value={searchTerm}
           onChangeText={setSearchTerm}
-          style={{ flex: 1 }}
+        />
+      </View>
+
+      {renderContent()} */}
+
+      {/* Search e lista de palavras ficam sempre */}
+      <View style={styles.searchContainer}>
+        <Ionicons
+          name="search"
+          size={20}
+          color="#666"
+          style={styles.searchIcon}
+        />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Pesquisar"
+          value={searchTerm}
+          onChangeText={setSearchTerm}
         />
       </View>
 
       {renderContent()}
 
-      <View style={styles.navbar}>
+      {selectedSection === "palavras" && (
+        <View style={styles.wordRequestContainer}>
+          <TouchableOpacity
+            style={styles.requestButton}
+            onPress={() => setModalVisible(true)}
+          >
+            <Text style={styles.buttonText}>Solicitar nova palavra</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.buttonTextSolicitation}>
+            Palavras já solicitadas: {requestedWords.length}
+          </Text>
+
+          <WordRequestModal
+            visible={modalVisible}
+            onClose={() => setModalVisible(false)}
+            wordToRequest={wordToRequest}
+            setWordToRequest={setWordToRequest}
+            urlToRequest={urlToRequest}
+            setUrlToRequest={setUrlToRequest}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={setSelectedCategory}
+            allCategories={allCategories}
+            handleWordRequest={handleWordRequest}
+          />
+        </View>
+      )}
+
+      
+
+      {/* <View style={styles.navbar}>
         <TouchableOpacity style={styles.navButton}>
           <Text>Home</Text>
         </TouchableOpacity>
@@ -232,7 +478,7 @@ const ForumInterface = () => {
         <TouchableOpacity style={styles.navButton}>
           <Text>Perfil</Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
     </SafeAreaView>
   );
 };
@@ -267,19 +513,26 @@ const styles = StyleSheet.create({
     backgroundColor: "#f5f5f5",
     marginHorizontal: 16,
     borderRadius: 8,
-    marginBottom: 16,
-    paddingHorizontal: 4,
+  },
+  searchIcon: {
+    marginRight: 8,
+    marginLeft: 8,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 16,
   },
   wordRequestContainer: {
     flexDirection: "column",
     padding: 16,
     paddingTop: 0,
-    gap: 8,
-    height: 350,
+    gap: 4,
+    height: 150,
   },
   wordInput: {
     flex: 1,
-    height: 40,
+    height: 50,
     borderWidth: 1,
     borderColor: "#ddd",
     borderRadius: 8,
@@ -287,14 +540,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   requestButton: {
-    backgroundColor: "#00b4d8",
+    backgroundColor: "#999",
     paddingHorizontal: 16,
     borderRadius: 8,
     justifyContent: "center",
     height: 40,
   },
   buttonText: {
-    color: "#000",
+    color: "#fff",
     fontWeight: "bold",
     textAlign: "center",
   },
@@ -303,9 +556,9 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
-    paddingTop: 0,
   },
   card: {
+    marginTop: 10,
     backgroundColor: "#00b4d8",
     padding: 16,
     borderRadius: 8,
@@ -327,10 +580,6 @@ const styles = StyleSheet.create({
   navButton: {
     padding: 8,
   },
-  searchIcon: {
-    marginRight: 8,
-    marginLeft: 8,
-  },
   cardInformation: {
     fontSize: 16,
     fontWeight: "bold",
@@ -347,6 +596,43 @@ const styles = StyleSheet.create({
   },
   urlText: {
     marginTop: 8,
+  },
+  pickerContainerStyle: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    backgroundColor: "#fff",
+  },
+  pickerStyle: {
+    height: 55,
+  },
+  cardContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  leftContent: {
+    flex: 1,
+  },
+
+  rightContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 4,
+  },
+
+  statusText: {
+    fontSize: 12,
+    color: "#000",
+    fontWeight: "bold",
   },
 });
 

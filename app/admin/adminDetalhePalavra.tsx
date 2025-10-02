@@ -10,9 +10,19 @@ type Word = {
   video: string;
   status: string;
   modulo: string;
-  categoria: string;
+  category: {
+    id: number;
+    name: string;
+    type: string;
+  };
   interprete: string;
-  variacoes: string[];
+  variations: {
+    id: number;
+    name: string;
+    description: string;
+    video: string;
+  }[];
+  interpreterName: string;
 };
 
 type RouteParams = {
@@ -49,12 +59,12 @@ const adminDetalhePalavra = () => {
       <View>
         <View style={styles.infoContainer}>
           <Text style={styles.label}>Módulo</Text>
-          <Text style={styles.info}>{word.modulo}</Text>
+          <Text style={styles.info}>{word.modulo == "UsoDiario" ? "Uso Diário" : "Uso Técnico"}</Text>
         </View>
 
         <View style={styles.infoContainer}>
           <Text style={styles.label}>Categoria</Text>
-          <Text style={styles.info}>{word.categoria}</Text>
+          <Text style={styles.info}>{word.category.name}</Text>
         </View>
 
         <View style={styles.infoContainer}>
@@ -62,27 +72,38 @@ const adminDetalhePalavra = () => {
           <Text
             style={[styles.info, styles[word.status as keyof typeof styles]]}
           >
-            {word.status.charAt(0).toUpperCase() + word.status.slice(1)}
+            {word.status == "PENDING" ? "Pendente" :
+              word.status == "APPROVED" ? "Aprovado" :
+              word.status == "REJECTED" ? "Rejeitado" : "Desconhecido"}
           </Text>
         </View>
 
         <View style={styles.infoContainer}>
           <Text style={styles.label}>Intérprete Responsável</Text>
-          <Text style={styles.info}>{word.interprete || "Não informado"}</Text>
+          <Text style={styles.info}>
+            {word.interpreterName || "Não informado"}
+          </Text>
         </View>
 
         <View style={styles.variationsContainer}>
-        <Text style={styles.sectionTitle}>Variações Linguísticas</Text>
-        {word.variacoes.length > 0 ? (
-          word.variacoes.map((variacoes, index) => (
-            <Text key={index} style={styles.variationText}>
-              {variacoes}
+          <Text style={styles.sectionTitle}>Variações Linguísticas</Text>
+          {Array.isArray(word.variations) && word.variations.length > 0 ? (
+            word.variations.map((variacao, index) => (
+              <View key={index} style={styles.variationCard}>
+                <Text style={styles.variationName}>{variacao.name}</Text>
+                <Text style={styles.variationDescription}>
+                  {variacao.description
+                    ? variacao.description
+                    : "Descrição não disponível"}
+                </Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.noVariationText}>
+              Ainda não há variações linguísticas cadastradas para esta palavra.
             </Text>
-          ))
-        ) : (
-          <Text style={styles.noVariationText}>Nenhuma variação disponível</Text>
-        )}
-      </View>
+          )}
+        </View>
       </View>
 
       <View style={styles.videoContainer}>
@@ -221,7 +242,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
     textAlign: "center",
-  }
+  },
+  variationCard: {
+    backgroundColor: "#f0f0f0",
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 10,
+  },
+  variationName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#222",
+  },
+  variationDescription: {
+    fontSize: 14,
+    color: "#555",
+    marginTop: 4,
+  },
 });
 
 export default adminDetalhePalavra;

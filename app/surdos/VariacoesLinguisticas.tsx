@@ -5,8 +5,12 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
+import { Url } from "~/Utils/Api";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Word = {
   id: number;
@@ -19,67 +23,74 @@ type Word = {
   variacao: boolean;
 };
 
-const mockVariations = [
-  {
-    id: 11,
-    word: "Palavra 1.1 - CE",
-    description: "lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet",
-    video: "",
-    status: "Aprovado",
-    modulo: "Básico",
-    categoria: "Saudações",
-    variacao: false,
-    parentId: 1,
-  },
-  {
-    id: 12,
-    word: "Palavra 1.1 - SP",
-    description: "lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet",
-    video: "",
-    status: "Aprovado",
-    modulo: "Básico",
-    categoria: "Saudações",
-    variacao: false,
-    parentId: 1,
-  },
-  {
-    id: 13,
-    word: "Palavra 1.1 - RS",
-    description: "lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet lorem ipsum dolor sit amet",
-    video: "",
-    status: "Aprovado",
-    modulo: "Básico",
-    categoria: "Saudações",
-    variacao: false,
-    parentId: 1,
-  },
-];
-
 const VariacoesLinguisticasScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
 
-  const { word } = route.params as { word: Word };
+  const { word, userId } = route.params as { word: Word; userId: number };
   const [variacoes, setVariacoes] = useState<Word[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  console.log(variacoes);
 
   useEffect(() => {
-    const fetchedVariations = mockVariations.filter(
-      (w) => w.parentId === word.id
-    );
-    setVariacoes(fetchedVariations);
-  }, [word.id]);
+    const fetchVariacoes = async () => {
+      const token = await AsyncStorage.getItem("Token");
+      try {
+        const response = await axios.get(`${Url}/variations/${word.id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const variationsAsWords = response.data.map((variation: any) => ({
+          id: variation.id,
+          word: variation.name,
+          description: variation.description,
+          video: variation.video,
+          variariationView: true
+        }));
+
+        setVariacoes(variationsAsWords);
+      } catch (error) {
+        console.error("Erro ao buscar variações:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVariacoes();
+  }, []);
 
   const handleWordPress = (word: Word) => {
+    // Redireciona para detalhes da nova palavra
     //@ts-ignore
-    navigation.navigate("surdos/moduloPalavraDetalhes", { word });
+    navigation.navigate("surdos/moduloPalavraDetalhes", { word, userId });
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Variações de "{word.word}"</Text>
 
-      {variacoes.length === 0 ? (
-        <Text style={styles.noVariations}>Nenhuma variação encontrada.</Text>
+      {loading ? (
+        <View
+          style={{ alignItems: "center", justifyContent: "center", flex: 1 }}
+        >
+          <ActivityIndicator size="large" color="#007bff" />
+          <Text style={{ marginTop: 10 }}>🔄 Carregando conteúdo...</Text>
+        </View>
+      ) : variacoes.length === 0 ? (
+        <View
+          style={{ alignItems: "center", justifyContent: "center", flex: 1 }}
+        >
+          <Text style={{ fontSize: 24 }}>📦</Text>
+          <Text style={{ fontWeight: "bold", marginTop: 5 }}>
+            Variação não encontrado!
+          </Text>
+          <Text style={{ textAlign: "center", marginTop: 5 }}>
+            O conteúdo pode ter sido removido ou está indisponível.
+          </Text>
+        </View>
       ) : (
         <FlatList
           data={variacoes}

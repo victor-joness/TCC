@@ -9,10 +9,16 @@ import DicionarioScreen from "./dicionario";
 import PerfilScreen from "./perfil";
 import ModulosScreen from "./modulosScreen";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { useRoute } from "@react-navigation/native";
+import { useBlockBackButton } from "~/Utils/hooks/useBlockBackButton";
 
 const Tab = createBottomTabNavigator();
 
 export default function SurdosScreen() {
+  const route = useRoute();
+  const user = route.params?.user;
+  useBlockBackButton();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -38,10 +44,10 @@ export default function SurdosScreen() {
         headerTitleAlign: "center",
       })}
     >
-      <Tab.Screen name="Módulos" component={ModulosScreen} />
-      <Tab.Screen name="Dicionário" component={DicionarioScreen} />
-      <Tab.Screen name="Fórum" component={ForumScreen} />
-      <Tab.Screen name="Perfil" component={PerfilScreen} />
+      <Tab.Screen name="Módulos" component={ModulosScreen} initialParams={{ user }} />
+      <Tab.Screen name="Dicionário" component={DicionarioScreen} initialParams={{ user }} />
+      <Tab.Screen name="Fórum" component={ForumScreen} initialParams={{ user }} />
+      <Tab.Screen name="Perfil" component={PerfilScreen} initialParams={{ user }} />
     </Tab.Navigator>
   );
 }

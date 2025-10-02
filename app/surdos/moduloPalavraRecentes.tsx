@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,34 +6,73 @@ import {
   FlatList,
   TouchableOpacity,
   TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { Url } from "~/Utils/Api";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Word = {
   id: number;
   word: string;
   description: string;
   video: string;
+  status: string;
+  modulo: string;
+  category: {
+    id: number;
+    name: string;
+    type: string;
+  };
+  variacao: boolean;
 };
 
 const RecentScreen = () => {
   const route = useRoute();
-  const { recentWords } = route.params as {
-    recentWords: Word[];
-  };
+  const userId = route.params?.userId;
 
   const navigation = useNavigation();
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [recentWords, setRecentWords] = useState<Word[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const fetchRecentWords = async () => {
+      if (!userId) return;
+
+      setLoading(true);
+      setError(false);
+      const token = await AsyncStorage.getItem("Token");
+
+      try {
+        const response = await axios.get(`${Url}/view-words/${userId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          }
+        });
+        setRecentWords(response.data);
+      } catch (err) {
+        console.error("Erro ao buscar palavras recentes:", err);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecentWords();
+  }, []);
 
   const handleWordPress = (word: { id: number; word: string }) => {
     //@ts-ignore
     navigation.navigate("surdos/moduloPalavraDetalhes", { word });
   };
 
-  const [searchQuery, setSearchQuery] = useState("");
-
   const filteredWords = recentWords.filter((word) =>
-    word.word.toLowerCase().includes(searchQuery.toLowerCase())
+    word.word?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -55,7 +94,26 @@ const RecentScreen = () => {
         />
       </View>
 
-      {filteredWords.length === 0 ? (
+      {loading ? (
+        <View
+          style={{ alignItems: "center", justifyContent: "center", flex: 1 }}
+        >
+          <ActivityIndicator size="large" color="#007bff" />
+          <Text style={{ marginTop: 10 }}>🔄 Carregando conteúdo...</Text>
+        </View>
+      ) : error ? (
+        <View
+          style={{ alignItems: "center", justifyContent: "center", flex: 1 }}
+        >
+          <Text style={{ fontSize: 24 }}>❌</Text>
+          <Text style={{ color: "#d9534f", fontWeight: "bold", marginTop: 5 }}>
+            Ocorreu um erro ao carregar as palavras.
+          </Text>
+          <Text style={{ textAlign: "center", marginTop: 5 }}>
+            Verifique sua conexão ou tente novamente.
+          </Text>
+        </View>
+      ) : filteredWords.length === 0 ? (
         <Text style={styles.noLikesText}>Nenhuma palavra encontrada.</Text>
       ) : (
         <FlatList
